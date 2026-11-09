@@ -22,7 +22,9 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; min-height: 100vh; }
+body { margin: 0; min-width: 320px; min-height: 100vh; cursor: none; }
+/* Restore pointer cursor on interactive elements so UX stays correct */
+a, button, label, input, select, textarea, [role="button"] { cursor: none; }
 button, input, textarea, select { font: inherit; }
 button { color: inherit; }
 button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid rgba(45, 130, 89, .38); outline-offset: 2px; }

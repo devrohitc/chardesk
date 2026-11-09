@@ -18,6 +18,7 @@ import AppLayout from './layouts/AppLayout';
 import FocusTimer from './components/FocusTimer';
 import AddQuestModal from './components/AddQuestModal';
 import PokemonModal from './components/PokemonModal';
+import PokeBallCursor from './components/PokeBallCursor';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => {
@@ -159,6 +160,8 @@ function AuthenticatedApp({ currentUser, onLogout }) {
   }, [setXp, setCoins]);
 
   return (
+    <>
+    <PokeBallCursor />
     <AppLayout
       page={page}
       setPage={setPage}
@@ -244,6 +247,7 @@ function AuthenticatedApp({ currentUser, onLogout }) {
         />
       )}
     </AppLayout>
+    </>
   );
 }
 
