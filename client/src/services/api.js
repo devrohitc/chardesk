@@ -58,10 +58,13 @@ export async function request(endpoint, options = {}) {
     }
 
     if (!response.ok) {
-      const errorMsg = data?.message || data?.error || `HTTP error ${response.status}`;
+      const isJson = Boolean(contentType && contentType.includes('application/json'));
+      const errorMsg = (isJson && (data?.message || data?.error)) || `HTTP error ${response.status}`;
       const error = new Error(errorMsg);
       error.status = response.status;
       error.data = data;
+      error.isApiError = isJson && response.status !== 404 && response.status < 500;
+      error.isNotFound = response.status === 404;
       throw error;
     }
 
@@ -71,6 +74,7 @@ export async function request(endpoint, options = {}) {
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
       const offlineError = new Error('Backend server is not reachable. Operating in local mode.');
       offlineError.isNetworkError = true;
+      offlineError.isApiError = false;
       throw offlineError;
     }
     throw error;

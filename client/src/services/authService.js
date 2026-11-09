@@ -72,11 +72,11 @@ export async function registerUser({ username, displayName, password }) {
       return { ok: true, user, token };
     }
   } catch (err) {
-    // If backend provided a specific validation or business error, return it
-    if (err.status && err.message) {
+    // If backend provided a specific validation or business error (e.g. 400 validation, 409 duplicate), return it
+    if (err.isApiError && err.status !== 404 && err.status < 500 && err.message) {
       return { ok: false, error: err.message };
     }
-    // If network error, proceed with local registration fallback
+    // If 404 (no backend at endpoint), 500+, or network offline, smoothly fall through to local registration fallback
   }
 
   // Local fallback registration
@@ -125,9 +125,11 @@ export async function loginUser({ username, password }) {
       return { ok: true, user, token };
     }
   } catch (err) {
-    if (err.status && err.message) {
+    // Only return if it's an explicit business error from backend (e.g. 401 invalid credentials)
+    if (err.isApiError && err.status !== 404 && err.status < 500 && err.message) {
       return { ok: false, error: err.message };
     }
+    // If 404 (endpoint not hosted on Netlify) or network error, smoothly fall back to local authentication
   }
 
   // Local fallback login
@@ -135,7 +137,10 @@ export async function loginUser({ username, password }) {
   const user = users.find((u) => u.username === trimmedUsername);
 
   if (!user) {
-    return { ok: false, error: "We couldn't find that Trainer ID. Check your spelling or register." };
+    return {
+      ok: false,
+      error: `Trainer "${trimmedUsername}" was not found on this device. Click "Switch trainer" to Register your adventure first!`,
+    };
   }
 
   const passwordHash = await hashPasswordLocal(password);
