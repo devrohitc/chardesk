@@ -50,3 +50,4 @@ test('API Protected Endpoints & Authorization', async (t) => {
     assert.strictEqual(res.body.success, false);
   });
 });
+
