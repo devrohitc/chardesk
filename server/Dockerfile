@@ -13,3 +13,4 @@ EXPOSE 5000
 USER node
 
 CMD ["node", "src/server.js"]
+
