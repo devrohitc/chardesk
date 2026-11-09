@@ -1,0 +1,3835 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f7f4ed" />
+  <meta name="description" content="Pokedesk — a Pokémon-inspired personal life dashboard." />
+  <title>Pokedesk — Your life, one quest at a time</title>
+  <link rel="preconnect" href="https://pokeapi.co" />
+  <link rel="preconnect" href="https://raw.githubusercontent.com" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Nunito:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet" />
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #292b33;
+      --muted: #83818a;
+      --paper: #fbfaf5;
+      --paper-2: #f5f2e9;
+      --line: #ebe7dc;
+      --green: #2d8259;
+      --green-dark: #216d49;
+      --green-soft: #e4f3e7;
+      --pink: #e77eae;
+      --yellow: #f5e83f;
+      --shadow: 0 24px 70px rgba(48, 31, 63, .13), 0 3px 12px rgba(48, 31, 63, .05);
+      font-family: 'Nunito', ui-rounded, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      font-optical-sizing: auto;
+      background: #eee8f4;
+      color: var(--ink);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      color: inherit;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible,
+    select:focus-visible {
+      outline: 3px solid rgba(45, 130, 89, .38);
+      outline-offset: 2px;
+    }
+
+    button:disabled {
+      opacity: .48;
+      cursor: not-allowed !important;
+    }
+
+    .app-backdrop {
+      min-height: 100vh;
+      padding: 28px 22px 38px;
+      background: radial-gradient(ellipse at 12% 17%, rgba(229, 120, 188, .55), transparent 36%),
+        radial-gradient(ellipse at 91% 13%, rgba(105, 94, 231, .58), transparent 34%),
+        radial-gradient(ellipse at 83% 100%, rgba(244, 215, 104, .33), transparent 31%),
+        linear-gradient(135deg, #d5c6eb 0%, #f5b3ce 58%, #d4ccf1 100%);
+    }
+
+    .app-shell {
+      max-width: 1240px;
+      margin: 0 auto;
+      min-height: calc(100vh - 66px);
+      border: 1px solid rgba(255, 255, 255, .82);
+      border-radius: 19px;
+      overflow: hidden;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+
+    .app-header {
+      min-height: 75px;
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      padding: 0 28px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, .69);
+    }
+
+    .brand {
+      border: 0;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      flex: 0 0 212px;
+      text-align: left;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .brand-pokeball {
+      width: 32px;
+      height: 32px;
+      filter: drop-shadow(1px 2px 0 rgba(31, 35, 43, .22));
+    }
+
+    .cursor-pokeball {
+      position: fixed;
+      z-index: 9999;
+      left: 0;
+      top: 0;
+      width: 29px;
+      height: 29px;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(-50%, -50%) rotate(-18deg) scale(.82);
+      transition: opacity .18s ease, transform .12s ease;
+      will-change: left, top;
+    }
+
+    .cursor-sparkle {
+      position: fixed;
+      z-index: 9998;
+      pointer-events: none;
+      left: 0;
+      top: 0;
+      width: 12px;
+      height: 12px;
+      color: var(--sparkle-color, #e7c94f);
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(.35) rotate(0deg);
+      filter: drop-shadow(0 0 3px rgba(255, 255, 255, .85));
+      animation: sparkle-pop .72s ease-out forwards;
+    }
+
+    @keyframes sparkle-pop {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(.25) rotate(0deg);
+      }
+
+      18% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.15) rotate(35deg);
+      }
+
+      100% {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--drift-x, 8px)), calc(-50% + var(--drift-y, -18px))) scale(.2) rotate(100deg);
+      }
+    }
+
+    .cursor-pokeball.visible {
+      opacity: .94;
+      transform: translate(-50%, -50%) rotate(0deg) scale(1);
+    }
+
+    .cursor-pokeball.clicking {
+      transform: translate(-50%, -50%) rotate(28deg) scale(.78);
+    }
+
+    .gym-badges {
+      grid-column: 1 / -1;
+      padding: 18px;
+    }
+
+    .badge-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .gym-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      padding: 14px 8px;
+      border: 1px solid #ece8de;
+      border-radius: 12px;
+      background: #fffdf7;
+      text-align: center;
+    }
+
+    .gym-badge .badge-emblem {
+      width: 58px;
+      height: 58px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      border: 3px solid #e7e1d2;
+      background: #f6f2e8;
+      font-size: 28px;
+      filter: grayscale(1);
+      opacity: .55;
+    }
+
+    .gym-badge.earned .badge-emblem {
+      filter: none;
+      opacity: 1;
+      border-color: #e4c75b;
+      box-shadow: 0 4px 0 #e8dfc6, 0 0 0 4px #fff8d8;
+      background: linear-gradient(145deg, #fff8cf, #f7dfa0);
+    }
+
+    .gym-badge strong {
+      font-size: 11px;
+    }
+
+    .gym-badge small {
+      font-size: 9px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 600px) {
+      .cursor-pokeball {
+        display: none;
+      }
+
+      .badge-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .cursor-pokeball {
+        display: none;
+      }
+    }
+
+    .brand-word {
+      font-size: 15px;
+      font-weight: 1000;
+      letter-spacing: 2px;
+      line-height: 1.1;
+    }
+
+    .brand-word small {
+      display: block;
+      margin-top: 4px;
+      color: #99959a;
+      font-size: 7px;
+      letter-spacing: 1.45px;
+      font-weight: 900;
+    }
+
+    .main-nav {
+      display: flex;
+      align-self: stretch;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .nav-item {
+      align-self: stretch;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 11px;
+      border: 0;
+      border-bottom: 3px solid transparent;
+      background: transparent;
+      color: #939098;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: background .2s, color .2s;
+    }
+
+    .nav-item:hover {
+      color: var(--green);
+      background: #f7f8f1;
+    }
+
+    .nav-item.nav-active {
+      color: var(--green-dark);
+      border-bottom-color: var(--green);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .header-level {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #fff7c7;
+      padding: 7px 10px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .icon-button {
+      width: 34px;
+      height: 34px;
+      display: inline-grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      background: transparent;
+      color: #6f7076;
+      cursor: pointer;
+      transition: .18s ease;
+    }
+
+    .icon-button:hover {
+      border-color: var(--line);
+      background: white;
+      color: var(--green);
+    }
+
+    .notification-button {
+      position: relative;
+    }
+
+    .notification-button i {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      right: 7px;
+      top: 6px;
+      background: #8f78e7;
+      border: 1px solid white;
+    }
+
+    .mobile-nav {
+      display: none;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 59px;
+      padding: 8px 28px;
+      border-bottom: 1px solid var(--line);
+      background: #f9f7f0;
+    }
+
+    .mode-tabs {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .mode-tabs button {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 10px 14px;
+      border: 1px solid transparent;
+      background: #f0eee7;
+      border-radius: 7px;
+      font-size: 10px;
+      letter-spacing: .8px;
+      text-transform: uppercase;
+      font-weight: 1000;
+      color: #6e6d70;
+      cursor: pointer;
+    }
+
+    .mode-tabs button:hover {
+      background: #eae8dd;
+    }
+
+    .mode-tabs button.mode-active {
+      color: #45464c;
+      background: #e5e2d9;
+      border-color: #e1ddd2;
+    }
+
+    .mode-tabs button.focus-tab {
+      background: var(--green);
+      color: white;
+      padding-inline: 17px;
+      box-shadow: 0 2px 0 #1e6644;
+    }
+
+    .mode-tabs button.focus-tab:hover {
+      background: var(--green-dark);
+    }
+
+    .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .connection-status {
+      color: #8d8b91;
+      font-size: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 800;
+    }
+
+    .connection-status>span,
+    .saved-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #65ad78;
+      display: inline-block;
+    }
+
+    .current-page-chip {
+      display: none;
+      color: #8b8790;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .app-content {
+      padding: 27px 28px 26px;
+    }
+
+    .page-intro {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 20px;
+      margin-bottom: 23px;
+    }
+
+    .eyebrow {
+      display: block;
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 1.45px;
+      font-weight: 500;
+      text-transform: uppercase;
+      color: #99949a;
+      line-height: 1.5;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 4px;
+      font-size: clamp(25px, 2.6vw, 33px);
+      line-height: 1.12;
+      letter-spacing: -.85px;
+      font-weight: 1000;
+    }
+
+    h2 {
+      margin-bottom: 0;
+      font-size: 18px;
+      line-height: 1.2;
+      letter-spacing: -.3px;
+      font-weight: 1000;
+    }
+
+    h3 {
+      margin-bottom: 0;
+      font-weight: 1000;
+      letter-spacing: -.4px;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .page-intro p {
+      margin: 7px 0 0;
+      font-size: 12px;
+    }
+
+    .wave {
+      display: inline-block;
+      color: #e5ba2e;
+      font-size: 24px;
+      transform: rotate(14deg);
+    }
+
+    .date-picker {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      padding: 3px;
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 11px;
+      white-space: nowrap;
+    }
+
+    .date-picker label {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0 6px;
+      color: #8b8991;
+    }
+
+    .date-picker input {
+      max-width: 127px;
+      border: 0;
+      background: transparent;
+      color: #5f5c63;
+      font-size: 11px;
+      font-weight: 900;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .today-button {
+      border: 0;
+      border-radius: 8px;
+      background: #e6f2e8;
+      color: #2e7b53;
+      padding: 8px 10px;
+      font-size: 10px;
+      font-weight: 1000;
+      cursor: pointer;
+    }
+
+    .today-button:hover {
+      background: #d8eddc;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(250px, .78fr) minmax(0, 1.5fr);
+      gap: 17px;
+    }
+
+    .world-card {
+      overflow: hidden;
+      border-radius: 13px;
+      border: 1px solid #e6e4d8;
+      background: #f5f4e9;
+      box-shadow: 0 3px 9px rgba(35, 46, 25, .035);
+    }
+
+    .world-topline {
+      height: 39px;
+      padding: 9px 12px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border-radius: 5px;
+      padding: 4px 7px;
+      color: #79747c;
+      background: #f0ede4;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: .5px;
+      font-size: 9px;
+      line-height: 1.2;
+      font-weight: 500;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .tag.green {
+      background: #dfefe1;
+      color: #347a50;
+    }
+
+    .tag.yellow {
+      color: #61591b;
+      background: #fff4a7;
+    }
+
+    .tag svg {
+      flex: 0 0 auto;
+    }
+
+    .live-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #53ad68;
+      box-shadow: 0 0 0 3px rgba(83, 173, 104, .14);
+    }
+
+    .world-menu {
+      border: 0;
+      background: transparent;
+      color: #8c8d76;
+      padding: 2px;
+      cursor: pointer;
+    }
+
+    .world-scene {
+      height: 252px;
+      position: relative;
+      overflow: hidden;
+      margin: 0 12px;
+      border: 3px solid #e7e7c7;
+      border-radius: 9px;
+      background-color: #a4d96a;
+      background-image: radial-gradient(ellipse at 50% 45%, rgba(202, 241, 130, .65) 0, transparent 60%), repeating-linear-gradient(0deg, transparent, transparent 13px, rgba(48, 142, 62, .11) 14px, rgba(48, 142, 62, .11) 15px), repeating-linear-gradient(90deg, transparent, transparent 13px, rgba(48, 142, 62, .10) 14px, rgba(48, 142, 62, .10) 15px);
+      image-rendering: pixelated;
+    }
+
+    .world-scene::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 47%, rgba(57, 117, 44, .11) 100%);
+      pointer-events: none;
+    }
+
+    .cloud {
+      position: absolute;
+      height: 15px;
+      width: 45px;
+      background: rgba(255, 255, 239, .7);
+      border-radius: 15px;
+      opacity: .83;
+    }
+
+    .cloud::before,
+    .cloud::after {
+      content: '';
+      position: absolute;
+      background: inherit;
+      border-radius: 50%;
+    }
+
+    .cloud::before {
+      width: 20px;
+      height: 20px;
+      left: 6px;
+      top: -8px;
+    }
+
+    .cloud::after {
+      width: 15px;
+      height: 15px;
+      right: 5px;
+      top: -5px;
+    }
+
+    .cloud-one {
+      left: 9%;
+      top: 17%;
+      transform: scale(.72);
+    }
+
+    .cloud-two {
+      right: 12%;
+      top: 24%;
+      transform: scale(.55);
+    }
+
+    .shrine {
+      position: absolute;
+      width: 115px;
+      height: 91px;
+      left: 50%;
+      top: 6%;
+      transform: translateX(-50%);
+      filter: drop-shadow(2px 3px 0 rgba(39, 68, 43, .2));
+      z-index: 2;
+    }
+
+    .shrine-roof {
+      position: absolute;
+      left: 1px;
+      width: 113px;
+      height: 14px;
+      background: #343c88;
+      border: 3px solid #212a66;
+      clip-path: polygon(9% 0, 91% 0, 100% 48%, 95% 100%, 5% 100%, 0 48%);
+    }
+
+    .roof-one {
+      top: 0;
+    }
+
+    .roof-two {
+      top: 13px;
+      left: 8px;
+      width: 99px;
+      height: 10px;
+      background: #545dc0;
+    }
+
+    .shrine-top {
+      position: absolute;
+      left: 20px;
+      right: 20px;
+      top: 22px;
+      height: 7px;
+      background: #b7c9ed;
+      border: 2px solid #343d82;
+    }
+
+    .shrine-columns {
+      position: absolute;
+      left: 15px;
+      right: 15px;
+      top: 29px;
+      height: 38px;
+      display: flex;
+      justify-content: space-between;
+      background: #fff7bf;
+      border-inline: 4px solid #39428b;
+    }
+
+    .shrine-columns i {
+      display: block;
+      width: 8px;
+      height: 38px;
+      background: #4350a0;
+      border-inline: 1px solid #222969;
+    }
+
+    .shrine-base {
+      position: absolute;
+      left: 6px;
+      right: 6px;
+      bottom: 17px;
+      height: 8px;
+      background: #313c88;
+      border: 2px solid #212969;
+    }
+
+    .flower,
+    .grass {
+      position: absolute;
+      z-index: 1;
+      font-size: 15px;
+      line-height: 1;
+      text-shadow: 1px 1px 0 rgba(255, 255, 255, .6);
+    }
+
+    .flower {
+      color: #f06878;
+    }
+
+    .flower-a {
+      left: 12%;
+      bottom: 27%;
+    }
+
+    .flower-b {
+      left: 31%;
+      bottom: 12%;
+      color: #e4cb35;
+    }
+
+    .flower-c {
+      right: 18%;
+      bottom: 20%;
+      color: #ed7465;
+    }
+
+    .flower-d {
+      right: 25%;
+      top: 45%;
+      color: #ffd943;
+    }
+
+    .flower-e {
+      left: 19%;
+      top: 52%;
+      color: #fae05b;
+    }
+
+    .grass {
+      color: #4caa56;
+      font-size: 12px;
+    }
+
+    .grass-a {
+      left: 7%;
+      top: 37%;
+    }
+
+    .grass-b {
+      left: 26%;
+      top: 68%;
+    }
+
+    .grass-c {
+      right: 8%;
+      top: 56%;
+    }
+
+    .grass-d {
+      right: 40%;
+      bottom: 8%;
+    }
+
+    .grass-e {
+      right: 12%;
+      bottom: 10%;
+    }
+
+    .world-pokemon {
+      position: absolute;
+      z-index: 3;
+    }
+
+    .world-pokemon .pokemon-sprite img {
+      width: 47px;
+      height: 47px;
+      image-rendering: pixelated;
+    }
+
+    .pokemon-left {
+      left: 22%;
+      bottom: 24%;
+    }
+
+    .pokemon-right {
+      right: 18%;
+      bottom: 25%;
+    }
+
+    .world-partner {
+      position: absolute;
+      left: 50%;
+      bottom: 16%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 5;
+    }
+
+    .world-partner .pokemon-sprite {
+      width: 67px;
+      height: 65px;
+      background: rgba(255, 255, 255, .24);
+      border-radius: 50%;
+      animation: bob 3.4s ease-in-out infinite;
+    }
+
+    .world-partner img {
+      width: 65px;
+      height: 65px;
+      filter: drop-shadow(0 3px 0 rgba(36, 92, 33, .2));
+      image-rendering: pixelated;
+    }
+
+    .world-partner span {
+      padding: 3px 7px;
+      border: 1px solid rgba(76, 117, 45, .2);
+      border-radius: 4px;
+      background: rgba(251, 250, 229, .9);
+      color: #427443;
+      font-size: 8px;
+      font-weight: 1000;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+    }
+
+    .world-map-label {
+      position: absolute;
+      bottom: 5px;
+      left: 7px;
+      right: 7px;
+      z-index: 6;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 6px;
+      border: 1px solid rgba(60, 102, 41, .15);
+      border-radius: 5px;
+      background: rgba(246, 249, 217, .91);
+      color: #59814d;
+      font-family: 'DM Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 1px;
+    }
+
+    .world-map-label>span:first-child {
+      font-size: 12px;
+    }
+
+    .route-dot {
+      margin-left: auto;
+      width: 5px;
+      height: 5px;
+      background: #5da964;
+      border-radius: 50%;
+    }
+
+    .world-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 13px 14px 14px;
+    }
+
+    .world-footer>div {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .world-footer strong {
+      font-size: 13px;
+    }
+
+    .small-text {
+      font-size: 10px;
+    }
+
+    .secondary-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 33px;
+      padding: 7px 11px;
+      border: 1px solid #e5e0d5;
+      border-radius: 8px;
+      background: #fffdf6;
+      color: #777078;
+      font-size: 10px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: .18s;
+      white-space: nowrap;
+    }
+
+    .secondary-button:hover {
+      border-color: #c7dfc9;
+      color: var(--green);
+      background: #f4faf1;
+    }
+
+    .hero-right {
+      display: grid;
+      grid-template-rows: minmax(138px, auto) minmax(145px, auto);
+      gap: 14px;
+    }
+
+    .stats-card {
+      background: #f3f1e8;
+      border: 1px solid #ece9df;
+      border-radius: 12px;
+      padding: 16px 18px 12px;
+    }
+
+    .stats-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .stats-head>div {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .stats-head>div>strong {
+      font-size: 12px;
+    }
+
+    .weather-sticker {
+      width: 31px;
+      height: 31px;
+      display: grid;
+      place-items: center;
+      border-radius: 9px;
+      color: #cda533;
+      background: #fff1bd;
+      font-size: 22px;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 11px;
+      padding: 16px 0 12px;
+    }
+
+    .stat {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stat>span {
+      color: #8b8890;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .stat strong {
+      font-family: 'DM Mono', monospace;
+      font-size: clamp(21px, 2.1vw, 27px);
+      line-height: 1.1;
+      letter-spacing: -1px;
+      color: #26272f;
+    }
+
+    .stat strong small {
+      color: #8a8790;
+      font-size: 10px;
+      letter-spacing: 0;
+      margin-left: 2px;
+    }
+
+    .trainer-level {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #e5e1d4;
+    }
+
+    .pokemon-sprite {
+      border: 0;
+      background: transparent;
+      padding: 0;
+      display: inline-grid;
+      place-items: center;
+      flex: 0 0 auto;
+    }
+
+    .pokemon-sprite img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      image-rendering: auto;
+    }
+
+    .level-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: #e7e4d9;
+    }
+
+    .level-avatar img {
+      image-rendering: pixelated;
+    }
+
+    .level-content {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .level-heading {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 5px;
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      font-weight: 500;
+    }
+
+    .level-heading strong {
+      letter-spacing: .5px;
+    }
+
+    .level-heading span {
+      color: #8c8990;
+    }
+
+    .xp-track,
+    .progress-track {
+      height: 6px;
+      overflow: hidden;
+      background: #dfded4;
+      border-radius: 10px;
+    }
+
+    .xp-track>span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: #40a46b;
+      transition: width .4s ease;
+    }
+
+    .tiny-note {
+      color: #99949b;
+      font-size: 9px;
+      line-height: 1.55;
+    }
+
+    .level-content .tiny-note {
+      display: block;
+      margin-top: 3px;
+    }
+
+    .level-trophy {
+      color: #d3b04c;
+      flex: 0 0 auto;
+    }
+
+    .focus-card {
+      position: relative;
+      min-height: 151px;
+      display: grid;
+      grid-template-columns: .75fr 1.25fr;
+      align-items: center;
+      gap: 8px;
+      overflow: hidden;
+      padding: 13px 18px;
+      border: 1px solid #ece7d9;
+      border-radius: 12px;
+      background: #f9f7ee;
+    }
+
+    .focus-illustration {
+      position: relative;
+      display: grid;
+      place-items: center;
+      height: 100%;
+      min-height: 105px;
+    }
+
+    .focus-illustration::before {
+      content: '';
+      width: 108px;
+      height: 108px;
+      border-radius: 50%;
+      position: absolute;
+      background: #efe8d8;
+    }
+
+    .focus-illustration::after {
+      content: '';
+      position: absolute;
+      bottom: 9px;
+      width: 94px;
+      height: 14px;
+      border-radius: 50%;
+      background: rgba(91, 83, 64, .09);
+    }
+
+    .focus-pokemon {
+      position: relative;
+      z-index: 2;
+      width: 100px;
+      height: 100px;
+    }
+
+    .focus-pokemon img {
+      filter: drop-shadow(0 5px 0 rgba(89, 78, 54, .11));
+    }
+
+    .focus-spark {
+      position: absolute;
+      z-index: 3;
+      top: 10px;
+      right: 12px;
+      color: #d3b04c;
+      font-size: 28px;
+    }
+
+    .focus-copy {
+      position: relative;
+      z-index: 2;
+    }
+
+    .focus-copy .tag {
+      margin-bottom: 5px;
+    }
+
+    .focus-copy h3 {
+      font-size: 20px;
+      line-height: 1.05;
+    }
+
+    .focus-copy p {
+      max-width: 230px;
+      margin: 5px 0 8px;
+      color: #85818a;
+      font-size: 10px;
+    }
+
+    .primary-button {
+      min-height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      border: 1px solid #286f4d;
+      border-radius: 8px;
+      padding: 9px 14px;
+      background: var(--green);
+      box-shadow: 0 2px 0 #1f6747;
+      color: white;
+      font-size: 11px;
+      font-weight: 1000;
+      cursor: pointer;
+      transition: .18s ease;
+    }
+
+    .primary-button:hover {
+      background: var(--green-dark);
+      transform: translateY(-1px);
+    }
+
+    .focus-copy .primary-button {
+      min-height: 30px;
+      padding: 7px 11px;
+      font-size: 10px;
+    }
+
+    .done-button {
+      background: #52875c;
+    }
+
+    .quick-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 17px;
+    }
+
+    .quick-stat {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      padding: 12px 13px;
+      border: 1px solid #ece8de;
+      border-radius: 10px;
+      background: #fffefa;
+      text-align: left;
+      cursor: pointer;
+      transition: .18s;
+    }
+
+    .quick-stat:hover {
+      border-color: #c7dfc9;
+      transform: translateY(-1px);
+      box-shadow: 0 5px 14px rgba(45, 87, 53, .05);
+    }
+
+    .quick-stat>span:nth-child(2) {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      gap: 2px;
+      flex: 1;
+    }
+
+    .quick-stat small {
+      color: #9b969e;
+      font-family: 'DM Mono', monospace;
+      font-size: 8px;
+      letter-spacing: .7px;
+    }
+
+    .quick-stat strong {
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .quick-icon,
+    .finance-icon,
+    .routine-icon {
+      display: inline-grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      flex: 0 0 auto;
+    }
+
+    .mint {
+      color: #327d55;
+      background: #e4f3e6;
+    }
+
+    .peach {
+      color: #ba7952;
+      background: #fbe8da;
+    }
+
+    .lavender {
+      color: #7a66b6;
+      background: #eee8fc;
+    }
+
+    .red {
+      color: #b35353;
+      background: #fae5e1;
+    }
+
+    .mini-status {
+      display: inline-grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 7px;
+      background: #f0eee7;
+      color: #8e8a91;
+      flex: 0 0 auto;
+    }
+
+    .mini-status.done {
+      color: #2e8152;
+      background: #e0f1e4;
+    }
+
+    .micro-progress {
+      display: block;
+      height: 4px;
+      max-width: 110px;
+      margin-top: 3px;
+      border-radius: 5px;
+      background: #ece9dd;
+      overflow: hidden;
+    }
+
+    .micro-progress i {
+      display: block;
+      height: 100%;
+      border-radius: 5px;
+      background: #64b57d;
+      transition: width .25s;
+    }
+
+    .quest-section {
+      margin-top: 28px;
+    }
+
+    .section-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .section-heading h2 {
+      margin-top: 3px;
+    }
+
+    .text-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border: 0;
+      padding: 3px 0;
+      background: transparent;
+      color: #438a62;
+      font-size: 10px;
+      font-weight: 1000;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .text-action:hover {
+      color: #216a45;
+    }
+
+    .quest-books {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 14px;
+      padding: 1px 2px 8px;
+    }
+
+    .quest-book {
+      position: relative;
+      isolation: isolate;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      min-width: 0;
+      min-height: 123px;
+      padding: 26px 10px 10px;
+      border: 1px solid rgba(72, 51, 33, .3);
+      border-radius: 4px 7px 6px 4px;
+      background: var(--book-color);
+      box-shadow: inset 5px 0 0 rgba(65, 37, 25, .16), inset 7px 0 0 rgba(255, 255, 255, .14), 2px 3px 0 #b8956a, 0 6px 10px rgba(77, 57, 40, .07);
+      color: #fff9e8;
+      cursor: pointer;
+      text-align: left;
+      transition: transform .18s, box-shadow .18s;
+    }
+
+    .quest-book:hover {
+      transform: translateY(-4px);
+      box-shadow: inset 5px 0 0 rgba(65, 37, 25, .16), inset 7px 0 0 rgba(255, 255, 255, .14), 2px 5px 0 #b8956a, 0 9px 14px rgba(77, 57, 40, .12);
+    }
+
+    .quest-book.active {
+      outline: 3px solid rgba(66, 130, 87, .35);
+      outline-offset: 3px;
+      transform: translateY(-2px);
+    }
+
+    .book-blue {
+      --book-color: #5c91b7;
+    }
+
+    .book-rust {
+      --book-color: #aa7658;
+    }
+
+    .book-amber {
+      --book-color: #b4845e;
+    }
+
+    .book-violet {
+      --book-color: #9d7a9d;
+    }
+
+    .book-teal {
+      --book-color: #5c8e87;
+    }
+
+    .book-peach {
+      --book-color: #c18a68;
+    }
+
+    .book-tabs {
+      position: absolute;
+      top: 0;
+      left: 9px;
+      display: flex;
+      gap: 3px;
+      height: 13px;
+    }
+
+    .book-tabs i {
+      width: 10px;
+      height: 14px;
+      border-radius: 0 0 2px 2px;
+      background: #edcb49;
+      box-shadow: 0 1px 0 rgba(72, 43, 20, .25);
+    }
+
+    .book-tabs i:nth-child(2) {
+      background: #f4f0d1;
+    }
+
+    .book-tabs i:nth-child(3) {
+      background: #e78b86;
+    }
+
+    .book-number {
+      position: absolute;
+      right: 8px;
+      top: 8px;
+      color: rgba(255, 248, 223, .9);
+      font-family: 'DM Mono', monospace;
+      font-size: 8px;
+      letter-spacing: .2px;
+    }
+
+    .book-emoji {
+      font-size: 23px;
+      margin-bottom: 7px;
+      filter: drop-shadow(1px 2px 0 rgba(54, 35, 24, .18));
+    }
+
+    .quest-book strong {
+      font-size: 10px;
+      line-height: 1.25;
+      font-weight: 1000;
+      letter-spacing: .25px;
+    }
+
+    .book-hint {
+      display: block;
+      margin-top: 5px;
+      font-size: 8px;
+      line-height: 1.25;
+      color: rgba(255, 249, 234, .78);
+    }
+
+    .book-edge {
+      position: absolute;
+      top: 8px;
+      bottom: 8px;
+      right: -4px;
+      z-index: -1;
+      width: 4px;
+      border-radius: 0 3px 3px 0;
+      background: #dbc19b;
+      border: 1px solid rgba(71, 51, 34, .2);
+    }
+
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.12fr) minmax(0, .88fr);
+      gap: 16px;
+      margin-top: 17px;
+    }
+
+    .panel {
+      min-width: 0;
+      padding: 17px;
+      background: #fffefa;
+      border: 1px solid #ebe7dc;
+      border-radius: 12px;
+      box-shadow: 0 2px 7px rgba(35, 32, 20, .025);
+    }
+
+    .panel .section-heading {
+      margin-bottom: 12px;
+    }
+
+    .panel .section-heading h2 {
+      font-size: 16px;
+    }
+
+    .quest-progress-line {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: -2px 0 12px;
+      color: #77737a;
+      font-size: 10px;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .quest-progress-line .progress-track {
+      flex: 1;
+      height: 5px;
+      background: #f0ede4;
+    }
+
+    .progress-track>span {
+      display: block;
+      height: 100%;
+      border-radius: 10px;
+      background: #5aa774;
+      transition: width .25s;
+    }
+
+    .task-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .task-row {
+      min-height: 41px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      border-bottom: 1px solid #f0ede5;
+    }
+
+    .task-row:last-child {
+      border-bottom: 0;
+    }
+
+    .task-check {
+      display: inline-grid;
+      place-items: center;
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+      border: 1.5px solid #d9d5c8;
+      border-radius: 6px;
+      background: white;
+      color: white;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .task-check.checked {
+      border-color: #4c9b67;
+      background: #4c9b67;
+    }
+
+    .task-title-button {
+      min-width: 0;
+      flex: 1;
+      padding: 9px 0;
+      border: 0;
+      background: transparent;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .task-done .task-title-button {
+      color: #a4a0a4;
+      text-decoration: line-through;
+    }
+
+    .task-xp {
+      color: #a19a85;
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      white-space: nowrap;
+    }
+
+    .quest-list-footer {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #ede9df;
+      color: #87828b;
+      font-size: 9px;
+    }
+
+    .quest-list-footer span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .quest-list-footer svg {
+      color: #5b9b6d;
+    }
+
+    .journal-mini textarea {
+      width: 100%;
+      min-height: 145px;
+      resize: vertical;
+      padding: 12px;
+      border: 1px solid #e9e4d7;
+      border-radius: 9px;
+      background: #fbf9f1;
+      color: var(--ink);
+      font-size: 12px;
+      line-height: 1.65;
+      outline: 0;
+    }
+
+    .journal-mini textarea:focus {
+      border-color: #a7cfaf;
+      background: white;
+    }
+
+    .journal-date {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 9px;
+      color: #99949b;
+      font-size: 10px;
+    }
+
+    .journal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 5px;
+      margin-top: 7px;
+      color: #a29da5;
+      font-size: 8px;
+    }
+
+    .journal-footer span {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .journal-footer svg {
+      color: #5d9c70;
+    }
+
+    .prompt-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 12px;
+      padding: 7px 8px;
+      border: 1px solid #eee7d8;
+      border-radius: 7px;
+      background: #fff9dd;
+      color: #8b7544;
+      font-size: 9px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .prompt-chip:hover {
+      background: #fff3b7;
+    }
+
+    .gentle-reminder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 20px 0 1px;
+      color: #a29ba1;
+      font-size: 10px;
+      text-align: center;
+    }
+
+    .gentle-reminder>svg {
+      color: #de8bac;
+    }
+
+    .reminder-spark {
+      margin-left: 2px;
+      color: #c7a54f;
+      font-size: 19px;
+    }
+
+    .app-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      padding: 15px 28px;
+      border-top: 1px solid var(--line);
+      background: #f8f6ef;
+      color: #aaa4aa;
+      font-family: 'DM Mono', monospace;
+      font-size: 8px;
+      letter-spacing: .6px;
+    }
+
+    .app-footer>span {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .footer-pokeball {
+      display: inline-grid;
+      place-items: center;
+      width: 12px;
+      height: 12px;
+      border: 1px solid #d95e65;
+      background: linear-gradient(#ef7e7a 0 45%, #4e4241 46% 54%, #fff5e3 55%);
+      border-radius: 50%;
+      color: transparent;
+      font-size: 3px;
+    }
+
+    .footer-divider {
+      color: #d1c9bd;
+    }
+
+    .footer-heart {
+      color: #e18baa;
+      font-size: 10px;
+    }
+
+    /* Journal view */
+    .page-content {
+      min-height: 520px;
+    }
+
+    .journal-layout {
+      display: grid;
+      grid-template-columns: minmax(220px, .75fr) minmax(0, 1.55fr);
+      gap: 17px;
+    }
+
+    .journal-sidebar {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 24px;
+      background: linear-gradient(155deg, #fffdf6 0%, #f8f2df 100%);
+    }
+
+    .journal-stamp {
+      display: grid;
+      place-items: center;
+      width: 49px;
+      height: 49px;
+      margin-bottom: 20px;
+      border-radius: 15px;
+      background: #f8e9be;
+      color: #c49c4b;
+      font-size: 29px;
+      transform: rotate(-7deg);
+    }
+
+    .journal-sidebar h2 {
+      margin-top: 10px;
+      font-size: 21px;
+      line-height: 1.2;
+    }
+
+    .journal-sidebar>p {
+      margin: 9px 0 17px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .privacy-note {
+      width: 100%;
+      display: flex;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid #dceada;
+      border-radius: 9px;
+      background: #f3faf0;
+      color: #43855c;
+    }
+
+    .privacy-note>div {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .privacy-note strong {
+      font-size: 10px;
+    }
+
+    .privacy-note span {
+      color: #8d9a8b;
+      font-size: 9px;
+      line-height: 1.4;
+    }
+
+    .journal-prompt {
+      margin-top: auto;
+      padding-top: 25px;
+    }
+
+    .journal-prompt p {
+      margin: 8px 0;
+      color: #6e6759;
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.55;
+    }
+
+    .journal-editor {
+      display: flex;
+      flex-direction: column;
+      padding: 22px 25px;
+      min-height: 500px;
+    }
+
+    .editor-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .editor-toolbar>span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #8d898f;
+      font-size: 10px;
+    }
+
+    .journal-title-input {
+      width: 100%;
+      margin-top: 22px;
+      padding: 10px 0 16px;
+      border: 0;
+      border-bottom: 1px solid #f0ece3;
+      background: transparent;
+      font-size: 21px;
+      font-weight: 1000;
+      outline: none;
+    }
+
+    .journal-main-textarea {
+      width: 100%;
+      flex: 1;
+      min-height: 340px;
+      margin-top: 14px;
+      padding: 6px 0;
+      border: 0;
+      background: transparent;
+      color: #4e4b53;
+      font-size: 13px;
+      line-height: 1.9;
+      resize: vertical;
+      outline: none;
+    }
+
+    .journal-title-input::placeholder,
+    .journal-main-textarea::placeholder {
+      color: #c2bdc1;
+    }
+
+    .editor-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-top: 12px;
+      border-top: 1px solid #f0ece3;
+      color: #a5a0a7;
+      font-size: 9px;
+    }
+
+    .editor-footer span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* Routines */
+    .routine-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .routine-card {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 9px;
+      padding: 20px;
+    }
+
+    .routine-card>p {
+      min-height: 36px;
+      margin: -4px 0 5px;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .routine-card h2 {
+      font-size: 17px;
+    }
+
+    .routine-icon {
+      width: 42px;
+      height: 42px;
+      margin-bottom: 2px;
+    }
+
+    .form-label {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+      margin-top: 10px;
+      color: #716d75;
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .form-label input,
+    .form-label textarea,
+    .form-label select {
+      width: 100%;
+      padding: 10px 11px;
+      border: 1px solid #e8e3d8;
+      border-radius: 8px;
+      background: white;
+      color: #4f4b53;
+      outline: 0;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .form-label textarea {
+      min-height: 74px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .form-label input:focus,
+    .form-label textarea:focus,
+    .form-label select:focus {
+      border-color: #9ecaa6;
+    }
+
+    .routine-card>.primary-button {
+      margin: 1px 0 4px;
+    }
+
+    .meal-row {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 0;
+      border-bottom: 1px solid #f0ede5;
+    }
+
+    .meal-row span {
+      width: 62px;
+      color: #85808a;
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .meal-row input {
+      flex: 1;
+      min-width: 0;
+      width: 1px;
+      padding: 8px;
+      border: 1px solid #e8e3d8;
+      border-radius: 7px;
+      background: #fff;
+      font-size: 10px;
+    }
+
+    .counter-control {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 5px 7px;
+      border: 1px solid #e8e3d8;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .counter-control button {
+      width: 26px;
+      height: 25px;
+      border: 0;
+      border-radius: 6px;
+      background: #f0f3e9;
+      color: #458256;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    .counter-control strong {
+      min-width: 14px;
+      text-align: center;
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+    }
+
+    .counter-control .small-text {
+      margin-left: auto;
+    }
+
+    .check-row {
+      display: flex;
+      gap: 9px;
+      align-items: flex-start;
+      width: 100%;
+      margin: 8px 0 2px;
+      cursor: pointer;
+    }
+
+    .check-row input {
+      accent-color: #448b5d;
+      width: 15px;
+      height: 15px;
+      margin-top: 2px;
+    }
+
+    .check-row span {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .check-row strong {
+      font-size: 10px;
+    }
+
+    .check-row small {
+      color: #969099;
+      font-size: 9px;
+      line-height: 1.4;
+    }
+
+    .routine-disclaimer {
+      margin-top: 17px;
+    }
+
+    /* Finance */
+    .finance-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 13px;
+    }
+
+    .finance-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .finance-stat>strong {
+      font-family: 'DM Mono', monospace;
+      font-size: clamp(22px, 2.5vw, 29px);
+      letter-spacing: -1.2px;
+    }
+
+    .finance-icon {
+      width: 37px;
+      height: 37px;
+    }
+
+    .inline-setting {
+      margin-top: 0;
+      font-size: 9px;
+    }
+
+    .inline-setting input {
+      padding: 7px 9px;
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+    }
+
+    .finance-track {
+      width: 100%;
+      margin-top: 2px;
+      background: #f1ede4;
+    }
+
+    .finance-track>span {
+      background: #d29a5d;
+    }
+
+    .finance-layout {
+      display: grid;
+      grid-template-columns: minmax(230px, .75fr) minmax(0, 1.5fr);
+      gap: 14px;
+      margin-top: 15px;
+    }
+
+    .transaction-form .section-heading {
+      align-items: flex-start;
+    }
+
+    .segmented-control {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 4px;
+      border-radius: 9px;
+      background: #f2f0e8;
+    }
+
+    .segmented-control button {
+      padding: 8px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: #86818a;
+      font-size: 10px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .segmented-control button.selected {
+      background: #fffefa;
+      color: #347c52;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, .06);
+    }
+
+    .full-button {
+      width: 100%;
+      margin-top: 15px;
+    }
+
+    .transactions-panel {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .transaction-list {
+      flex: 1;
+      min-height: 150px;
+    }
+
+    .transaction-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0ede5;
+    }
+
+    .transaction-icon {
+      display: grid;
+      place-items: center;
+      width: 35px;
+      height: 35px;
+      border-radius: 9px;
+      background: #f9e9dd;
+      color: #b97f52;
+      flex: 0 0 auto;
+    }
+
+    .transaction-icon.income-icon {
+      background: #e4f3e6;
+      color: #3b8958;
+    }
+
+    .transaction-info {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .transaction-info strong {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 11px;
+    }
+
+    .transaction-info span {
+      color: #9e99a0;
+      font-size: 9px;
+    }
+
+    .positive-amount,
+    .negative-amount {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .positive-amount {
+      color: #3b8c57;
+    }
+
+    .negative-amount {
+      color: #af6b5b;
+    }
+
+    .delete-transaction {
+      opacity: .55;
+      width: 26px;
+      height: 26px;
+    }
+
+    .delete-transaction:hover {
+      opacity: 1;
+      color: #bc514b;
+    }
+
+    .transaction-summary {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+      padding-top: 14px;
+      border-top: 1px solid #ece8df;
+      color: #827d85;
+      font-size: 11px;
+    }
+
+    .transaction-summary strong {
+      color: var(--ink);
+      font-family: 'DM Mono', monospace;
+      font-size: 15px;
+    }
+
+    /* Pokédex */
+    .dex-summary {
+      display: grid;
+      grid-template-columns: 1fr 240px;
+      align-items: center;
+      overflow: hidden;
+      min-height: 220px;
+      padding: 22px 27px;
+      background: linear-gradient(110deg, #f4f1e5 0%, #fbf9f0 58%, #f1e9d2 100%);
+    }
+
+    .dex-summary-copy h2 {
+      margin-top: 13px;
+      font-size: 25px;
+    }
+
+    .dex-summary-copy>p {
+      max-width: 410px;
+      margin: 8px 0 16px;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .dex-summary-stats {
+      display: flex;
+      gap: 24px;
+    }
+
+    .dex-summary-stats div {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .dex-summary-stats strong {
+      font-family: 'DM Mono', monospace;
+      font-size: 20px;
+    }
+
+    .dex-summary-stats span {
+      color: #9a949b;
+      font-size: 9px;
+    }
+
+    .dex-feature-art {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 180px;
+    }
+
+    .dex-feature-pokemon {
+      z-index: 2;
+      width: 170px;
+      height: 170px;
+    }
+
+    .dex-feature-pokemon img {
+      filter: drop-shadow(0 8px 0 rgba(76, 67, 41, .08));
+    }
+
+    .dex-orbit {
+      position: absolute;
+      border: 1px dashed rgba(124, 149, 91, .42);
+      border-radius: 50%;
+    }
+
+    .orbit-one {
+      width: 170px;
+      height: 170px;
+    }
+
+    .orbit-two {
+      width: 128px;
+      height: 128px;
+      border-color: rgba(124, 149, 91, .22);
+    }
+
+    .page-content>.section-heading {
+      margin-top: 25px;
+    }
+
+    .collection-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 13px;
+    }
+
+    .collection-card {
+      display: flex;
+      align-items: center;
+      flex-direction: column;
+      gap: 9px;
+      padding: 12px;
+      background: #fffefa;
+    }
+
+    .collection-number {
+      align-self: stretch;
+      color: #a7a0a7;
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+    }
+
+    .collection-art {
+      width: 100px;
+      height: 100px;
+    }
+
+    .collection-card>strong {
+      font-size: 12px;
+    }
+
+    .collection-card .secondary-button {
+      width: 100%;
+    }
+
+    /* Pokédex modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: grid;
+      place-items: center;
+      padding: 22px;
+      background: rgba(38, 33, 45, .43);
+      backdrop-filter: blur(7px);
+      animation: fade-in .18s ease;
+    }
+
+    .focus-modal,
+    .simple-modal,
+    .pokedex-modal {
+      position: relative;
+      width: min(100%, 440px);
+      padding: 28px;
+      border: 1px solid #eee7d9;
+      border-radius: 19px;
+      background: #fffdf7;
+      box-shadow: 0 25px 100px rgba(26, 22, 29, .25);
+      animation: modal-up .24s ease;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 13px;
+      right: 13px;
+    }
+
+    .focus-modal {
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .focus-modal-mark {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      margin: 0 auto 13px;
+      border-radius: 13px;
+      background: #e5f2e7;
+      color: #2f8052;
+    }
+
+    .focus-modal h2,
+    .simple-modal h2 {
+      margin-top: 5px;
+      font-size: 25px;
+    }
+
+    .focus-modal>p.muted,
+    .simple-modal>p.muted {
+      margin: 7px 0 16px;
+      font-size: 11px;
+    }
+
+    .timer-modes {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      padding: 4px;
+      border-radius: 9px;
+      background: #f1eee5;
+    }
+
+    .timer-modes button {
+      flex: 1;
+      border: 0;
+      border-radius: 7px;
+      padding: 8px 4px;
+      color: #8c8790;
+      background: transparent;
+      font-size: 10px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .timer-modes button.selected {
+      background: white;
+      color: #327d51;
+      box-shadow: 0 1px 4px #e6e1d6;
+    }
+
+    .timer-ring {
+      display: grid;
+      place-items: center;
+      width: 195px;
+      height: 195px;
+      margin: 21px auto 14px;
+      border-radius: 50%;
+      background: conic-gradient(#4a9b67 var(--timer-progress), #eee9dc var(--timer-progress));
+      position: relative;
+    }
+
+    .timer-ring::before {
+      content: '';
+      position: absolute;
+      inset: 8px;
+      border-radius: 50%;
+      background: #fffdf7;
+    }
+
+    .timer-ring>div {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .timer-ring strong {
+      font-family: 'DM Mono', monospace;
+      font-size: 38px;
+      letter-spacing: -2px;
+    }
+
+    .timer-ring span {
+      color: #9a949b;
+      font-family: 'DM Mono', monospace;
+      font-size: 8px;
+      letter-spacing: .9px;
+    }
+
+    .timer-actions {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .timer-actions .primary-button {
+      min-width: 155px;
+    }
+
+    .success-note {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0 0 12px;
+      color: #3c8b55;
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .tiny-note {
+      color: #9a949b;
+      font-size: 9px;
+      line-height: 1.6;
+    }
+
+    .focus-modal .tiny-note {
+      margin: 15px 0 0;
+    }
+
+    .simple-modal {
+      text-align: left;
+    }
+
+    .simple-modal .form-label {
+      margin-top: 13px;
+    }
+
+    .simple-modal .full-button {
+      margin-top: 19px;
+    }
+
+    .pokedex-backdrop {
+      padding: 16px;
+    }
+
+    .pokedex-modal {
+      width: min(100%, 900px);
+      max-height: min(88vh, 850px);
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+    }
+
+    .dex-modal-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .dex-modal-head h2 {
+      margin-top: 3px;
+      font-size: 25px;
+    }
+
+    .dex-modal-head h2 span {
+      margin-left: 5px;
+      color: #b3a99c;
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+    }
+
+    .dex-modal-head p {
+      margin: 5px 0 0;
+      font-size: 11px;
+    }
+
+    .dex-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 17px 0 12px;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid #e7e1d6;
+      border-radius: 9px;
+      background: white;
+      color: #9b949b;
+    }
+
+    .search-box input {
+      width: 100%;
+      min-width: 0;
+      padding: 0;
+      border: 0;
+      outline: none;
+      background: transparent;
+      font-size: 11px;
+    }
+
+    .pokemon-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 9px;
+      overflow-y: auto;
+      padding: 2px 3px 12px 1px;
+    }
+
+    .pokemon-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+      padding: 8px 6px 9px;
+      border: 1px solid #eee9df;
+      border-radius: 10px;
+      background: #fbfaf5;
+    }
+
+    .pokemon-card.is-caught {
+      border-color: #cfe4ce;
+      background: #f5fbf1;
+    }
+
+    .pokemon-card-number {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #aaa3a7;
+      font-family: 'DM Mono', monospace;
+      font-size: 8px;
+    }
+
+    .pokemon-card-number svg {
+      color: #4e9a64;
+    }
+
+    .pokemon-card-art {
+      width: 74px;
+      height: 69px;
+    }
+
+    .pokemon-card-art img {
+      filter: drop-shadow(0 4px 0 rgba(68, 57, 45, .06));
+    }
+
+    .pokemon-card>strong {
+      overflow: hidden;
+      max-width: 100%;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 10px;
+    }
+
+    .pokemon-card .tag {
+      margin: 2px 0 0;
+      font-size: 7px;
+    }
+
+    .mini-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      justify-content: center;
+      min-height: 25px;
+      max-width: 100%;
+      padding: 5px 6px;
+      border: 1px solid #e7e1d7;
+      border-radius: 6px;
+      background: white;
+      color: #6f6a73;
+      font-size: 8px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .mini-action:hover {
+      border-color: #a4cfad;
+      color: #327d50;
+    }
+
+    .mini-action.catch-action {
+      border-color: #c9e3cb;
+      color: #347b51;
+      background: #eef8e9;
+    }
+
+    .dex-note {
+      margin: 10px 0 0;
+    }
+
+    .loading-line {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 9px;
+      min-height: 150px;
+      color: #938d94;
+      font-size: 11px;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid #e7e1d8;
+      border-top-color: #4b9362;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+
+    .empty-state {
+      min-height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 9px;
+      padding: 26px;
+      text-align: center;
+      color: #a39ca3;
+    }
+
+    .empty-state>svg {
+      color: #a5caa2;
+    }
+
+    .empty-state strong {
+      color: #6f6a72;
+      font-size: 12px;
+    }
+
+    .empty-state span {
+      max-width: 260px;
+      font-size: 10px;
+      line-height: 1.5;
+    }
+
+    .empty-state .primary-button {
+      margin-top: 4px;
+    }
+
+    /* Settings */
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .settings-card {
+      display: flex;
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .settings-card h2 {
+      font-size: 16px;
+    }
+
+    .settings-card p {
+      min-height: 70px;
+      margin-bottom: 0;
+      font-size: 11px;
+      line-height: 1.65;
+    }
+
+    .danger-outline {
+      border-color: #ecd3ce;
+      color: #ad6558;
+    }
+
+    .danger-outline:hover {
+      border-color: #d8a59a;
+      color: #a64b42;
+      background: #fff5f1;
+    }
+
+    .danger-button {
+      min-height: 32px;
+      padding: 7px 10px;
+      border: 1px solid #bc5d53;
+      border-radius: 8px;
+      background: #be6256;
+      color: white;
+      font-size: 10px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .confirm-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    @keyframes bob {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-5px);
+      }
+    }
+
+    @keyframes fade-in {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes modal-up {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(.985);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 1000px) {
+      .app-backdrop {
+        padding: 18px 12px 25px;
+      }
+
+      .app-header {
+        gap: 12px;
+        padding: 0 18px;
+      }
+
+      .brand {
+        flex-basis: 168px;
+      }
+
+      .main-nav {
+        gap: 1px;
+      }
+
+      .nav-item {
+        padding-inline: 8px;
+        gap: 5px;
+        font-size: 10px;
+      }
+
+      .toolbar {
+        padding-inline: 18px;
+      }
+
+      .app-content {
+        padding: 22px 18px;
+      }
+
+      .world-scene {
+        height: 230px;
+      }
+
+      .quest-books {
+        gap: 10px;
+      }
+
+      .quest-book {
+        padding-inline: 8px;
+      }
+
+      .book-hint {
+        font-size: 7px;
+      }
+
+      .book-emoji {
+        font-size: 20px;
+      }
+
+      .focus-card {
+        padding-inline: 12px;
+      }
+
+      .focus-copy h3 {
+        font-size: 18px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .app-backdrop {
+        padding: 0;
+        background: #f1d1e3;
+      }
+
+      .app-shell {
+        min-height: 100vh;
+        border-radius: 0;
+        border: 0;
+      }
+
+      .app-header {
+        min-height: 64px;
+        padding: 0 15px;
+        gap: 8px;
+      }
+
+      .brand {
+        flex: 1;
+      }
+
+      .main-nav {
+        display: none;
+      }
+
+      .header-actions {
+        gap: 4px;
+      }
+
+      .header-level {
+        padding: 6px 8px;
+      }
+
+      .mobile-nav {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        padding: 8px 6px 7px;
+        border-bottom: 1px solid var(--line);
+        background: #fffdf8;
+      }
+
+      .mobile-nav button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 4px;
+        padding: 6px 0;
+        border: 0;
+        background: transparent;
+        color: #9a949d;
+        font-size: 9px;
+        font-weight: 900;
+        cursor: pointer;
+      }
+
+      .mobile-nav button.active {
+        color: #347b51;
+      }
+
+      .toolbar {
+        min-height: 52px;
+        padding: 7px 12px;
+      }
+
+      .mode-tabs {
+        gap: 5px;
+      }
+
+      .mode-tabs button {
+        padding: 9px;
+        font-size: 9px;
+        letter-spacing: .3px;
+      }
+
+      .mode-tabs button.focus-tab {
+        padding-inline: 10px;
+      }
+
+      .toolbar-right {
+        gap: 0;
+      }
+
+      .current-page-chip {
+        display: none;
+      }
+
+      .connection-status {
+        font-size: 9px;
+      }
+
+      .app-content {
+        padding: 20px 13px 24px;
+      }
+
+      .page-intro {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 13px;
+      }
+
+      .date-picker {
+        align-self: flex-start;
+      }
+
+      .hero-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .world-card {
+        display: grid;
+        grid-template-rows: auto minmax(210px, 260px) auto;
+      }
+
+      .world-scene {
+        height: 248px;
+      }
+
+      .hero-right {
+        grid-template-rows: auto auto;
+      }
+
+      .focus-card {
+        grid-template-columns: .78fr 1.22fr;
+        min-height: 155px;
+      }
+
+      .quick-stats-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .quick-stat {
+        padding: 10px;
+      }
+
+      .quick-stat .micro-progress {
+        max-width: 160px;
+      }
+
+      .quest-books {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 13px 11px;
+      }
+
+      .quest-book {
+        min-height: 118px;
+        padding: 25px 10px 10px;
+      }
+
+      .book-hint {
+        font-size: 8px;
+      }
+
+      .bottom-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .app-footer {
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding-inline: 12px;
+        text-align: center;
+      }
+
+      .journal-layout,
+      .finance-layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .journal-sidebar {
+        padding: 18px;
+      }
+
+      .journal-stamp {
+        margin-bottom: 12px;
+      }
+
+      .journal-prompt {
+        padding-top: 15px;
+      }
+
+      .journal-editor {
+        min-height: 430px;
+        padding: 17px;
+      }
+
+      .routine-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .routine-card>p {
+        min-height: unset;
+      }
+
+      .finance-stat-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .finance-stat {
+        display: grid;
+        grid-template-columns: 40px 1fr;
+        align-items: center;
+        column-gap: 10px;
+      }
+
+      .finance-stat .finance-icon {
+        grid-row: span 2;
+      }
+
+      .finance-stat>strong {
+        grid-column: 2;
+      }
+
+      .finance-stat .form-label,
+      .finance-stat .tiny-note,
+      .finance-stat .finance-track {
+        grid-column: 1 / -1;
+      }
+
+      .dex-summary {
+        grid-template-columns: 1fr 105px;
+        padding: 18px;
+      }
+
+      .dex-summary-copy h2 {
+        font-size: 21px;
+      }
+
+      .dex-summary-copy>p {
+        font-size: 10px;
+      }
+
+      .dex-summary-stats {
+        gap: 15px;
+      }
+
+      .dex-feature-art {
+        min-height: 130px;
+      }
+
+      .dex-feature-pokemon {
+        width: 115px;
+        height: 115px;
+      }
+
+      .orbit-one {
+        width: 118px;
+        height: 118px;
+      }
+
+      .orbit-two {
+        width: 90px;
+        height: 90px;
+      }
+
+      .collection-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .settings-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .settings-card p {
+        min-height: unset;
+      }
+
+      .pokemon-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .pokedex-modal {
+        padding: 18px 13px;
+        max-height: 92vh;
+      }
+
+      .dex-modal-head {
+        padding: 2px 3px;
+      }
+
+      .dex-toolbar {
+        margin: 13px 0 10px;
+      }
+
+      .pokemon-card-art {
+        width: 59px;
+        height: 57px;
+      }
+
+      .pokemon-card {
+        padding-inline: 4px;
+      }
+
+      .pokemon-card>strong {
+        font-size: 9px;
+      }
+
+      .dex-note {
+        font-size: 8px;
+      }
+
+      .simple-modal,
+      .focus-modal {
+        padding: 25px 19px;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .brand-word {
+        font-size: 13px;
+        letter-spacing: 1.4px;
+      }
+
+      .brand-mark {
+        width: 25px;
+        height: 25px;
+      }
+
+      .header-level {
+        font-size: 9px;
+      }
+
+      .app-header {
+        padding-inline: 10px;
+      }
+
+      .mode-tabs button {
+        padding-inline: 7px;
+        font-size: 8px;
+      }
+
+      .toolbar {
+        padding-inline: 8px;
+      }
+
+      .toolbar-right {
+        display: none;
+      }
+
+      .stats-card {
+        padding-inline: 12px;
+      }
+
+      .stat strong {
+        font-size: 22px;
+      }
+
+      .focus-card {
+        padding-inline: 7px;
+      }
+
+      .focus-copy h3 {
+        font-size: 17px;
+      }
+
+      .focus-illustration::before {
+        width: 90px;
+        height: 90px;
+      }
+
+      .focus-pokemon {
+        width: 80px;
+        height: 80px;
+      }
+
+      .focus-pokemon img {
+        width: 80px;
+        height: 80px;
+      }
+
+      .quest-book {
+        min-height: 108px;
+        padding-inline: 7px;
+      }
+
+      .book-emoji {
+        font-size: 18px;
+      }
+
+      .book-hint {
+        display: none;
+      }
+
+      .quest-book strong {
+        font-size: 9px;
+      }
+
+      .task-title-button {
+        font-size: 10px;
+      }
+
+      .task-xp {
+        font-size: 8px;
+      }
+
+      .dex-summary {
+        grid-template-columns: minmax(0, 1fr) 75px;
+      }
+
+      .dex-summary-copy h2 {
+        font-size: 18px;
+      }
+
+      .dex-summary-stats {
+        gap: 10px;
+      }
+
+      .dex-summary-stats strong {
+        font-size: 17px;
+      }
+
+      .dex-feature-pokemon {
+        width: 85px;
+        height: 85px;
+      }
+
+      .orbit-one {
+        width: 90px;
+        height: 90px;
+      }
+
+      .orbit-two {
+        width: 68px;
+        height: 68px;
+      }
+
+      .pokemon-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+      *,
+      *::before,
+      *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    /* Monthly bills */
+    .bills-panel {
+      margin-top: 15px;
+    }
+
+    .bills-intro {
+      margin: -4px 0 13px;
+      font-size: 10px;
+      line-height: 1.55;
+    }
+
+    .bill-form {
+      display: grid;
+      grid-template-columns: minmax(140px, 1.35fr) minmax(100px, .85fr) minmax(75px, .55fr) minmax(110px, .9fr) auto;
+      align-items: end;
+      gap: 10px;
+      padding: 13px;
+      border: 1px solid #eee9df;
+      border-radius: 10px;
+      background: #fbf9f2;
+    }
+
+    .bill-form .form-label {
+      margin-top: 0;
+    }
+
+    .bill-add-button {
+      align-self: end;
+      white-space: nowrap;
+    }
+
+    .bill-list {
+      margin-top: 8px;
+    }
+
+    .bill-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      padding: 11px 2px;
+      border-bottom: 1px solid #f0ede5;
+    }
+
+    .bill-row:last-child {
+      border-bottom: 0;
+    }
+
+    .bill-status-icon {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      flex: 0 0 auto;
+      border-radius: 9px;
+      background: #f0eee6;
+      color: #8d8790;
+    }
+
+    .bill-status-icon.paid {
+      color: #2f8452;
+      background: #e1f2e4;
+    }
+
+    .bill-status-icon.overdue {
+      color: #a56d31;
+      background: #fff1c6;
+    }
+
+    .bill-info {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .bill-info strong {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 11px;
+    }
+
+    .bill-info span {
+      color: #9d98a0;
+      font-size: 9px;
+    }
+
+    .bill-amount {
+      color: #343039;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .bill-toggle {
+      min-height: 28px;
+      padding: 5px 8px;
+      font-size: 9px;
+    }
+
+    .bill-toggle.bill-unpaid {
+      color: #9e6f4b;
+    }
+
+    @media (max-width: 900px) {
+      .bill-form {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .bill-add-button {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .bill-row {
+        flex-wrap: wrap;
+        gap: 7px;
+      }
+
+      .bill-info {
+        min-width: calc(100% - 50px);
+      }
+
+      .bill-amount {
+        margin-left: 41px;
+      }
+
+      .bill-row .tag {
+        margin-left: 0;
+      }
+
+      .bill-toggle {
+        margin-left: auto;
+      }
+
+      .bill-form {
+        padding: 10px;
+        gap: 8px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-backdrop">
+    <main class="app-shell">
+      <header class="app-header">
+        <button class="brand" data-page="home" aria-label="Pokedesk home"><span class="brand-mark"><svg
+              class="brand-pokeball" viewBox="0 0 100 100" aria-hidden="true">
+              <circle cx="50" cy="50" r="45" fill="#fff" stroke="#292b33" stroke-width="7" />
+              <path d="M5 50a45 45 0 0 1 90 0Z" fill="#ef4444" />
+              <path d="M7 50h86" stroke="#292b33" stroke-width="8" />
+              <circle cx="50" cy="50" r="14" fill="#fff" stroke="#292b33" stroke-width="7" />
+              <circle cx="50" cy="50" r="6" fill="#fff" />
+            </svg></span><span class="brand-word">POKEDESK<small>YOUR LIFE ADVENTURE</small></span></button>
+        <nav class="main-nav" aria-label="Main navigation">
+          <button class="nav-item nav-active" data-page="home"><span>⌂</span><span>Home</span></button>
+          <button class="nav-item" data-page="journal"><span>▤</span><span>Journal</span></button>
+          <button class="nav-item" data-page="routines"><span>♧</span><span>Routines</span></button>
+          <button class="nav-item" data-page="finance"><span>₹</span><span>Finance</span></button>
+          <button class="nav-item" data-page="pokedex"><span>♟</span><span>Pokédex</span></button>
+        </nav>
+        <div class="header-actions"><span class="header-level">✦ Lv. 1</span><button
+            class="icon-button notification-button" data-action="open-focus"
+            aria-label="Focus timer">◷<i></i></button><button class="icon-button" data-page="settings"
+            aria-label="Settings">☰</button></div>
+      </header>
+      <div class="mobile-nav">
+        <button data-page="home" class="active"><span>⌂</span><span>Home</span></button><button
+          data-page="journal"><span>▤</span><span>Journal</span></button><button
+          data-page="routines"><span>♧</span><span>Routines</span></button><button
+          data-page="finance"><span>₹</span><span>Finance</span></button><button
+          data-page="pokedex"><span>♟</span><span>Pokédex</span></button>
+      </div>
+      <div class="toolbar">
+        <div class="mode-tabs"><button data-page="home" class="mode-active">⌂ Portal</button><button class="focus-tab"
+            data-action="open-focus">✦ Focus now</button><button data-page="journal">▦ Journal</button></div>
+        <div class="toolbar-right"><span class="connection-status"><span></span> Local save on</span><span
+            class="current-page-chip" data-current-page>Home</span></div>
+      </div>
+      <div class="app-content" id="app-content" aria-live="polite"></div>
+      <footer class="app-footer"><span><span class="footer-pokeball">●</span> POKEDESK <span
+            class="footer-divider">/</span> YOUR LIFE, ONE QUEST AT A TIME</span><span>Made for your own little world
+          <span class="footer-heart">♥</span></span></footer>
+    </main>
+  </div>
+  <div id="modal-host"></div>
+  <div id="cursor-sparkle-layer" aria-hidden="true"></div><svg class="cursor-pokeball" id="cursor-pokeball"
+    viewBox="0 0 100 100" aria-hidden="true">
+    <circle cx="50" cy="50" r="45" fill="#fff" stroke="#292b33" stroke-width="7" />
+    <path d="M5 50a45 45 0 0 1 90 0Z" fill="#ef4444" />
+    <path d="M7 50h86" stroke="#292b33" stroke-width="8" />
+    <circle cx="50" cy="50" r="14" fill="#fff" stroke="#292b33" stroke-width="7" />
+    <circle cx="50" cy="50" r="6" fill="#fff" />
+  </svg>
+  <script>
+    /* Pokedesk local-first standalone runtime. No bundler or dependency install required. */
+    (() => {
+      'use strict';
+      const PREFIX = 'pokedesk:v1:';
+      const today = () => new Date().toLocaleDateString('en-CA');
+      const shiftDate = (value, amount) => { const d = new Date(`${value}T12:00:00`); d.setDate(d.getDate() + amount); return d.toLocaleDateString('en-CA'); };
+      const dateLabel = (value, options = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) => new Date(`${value}T12:00:00`).toLocaleDateString('en-IN', options);
+      const money = (value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(value || 0));
+      const esc = (value = '') => String(value).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
+      const read = (key, fallback) => { try { const raw = localStorage.getItem(PREFIX + key); return raw === null ? fallback : JSON.parse(raw); } catch { return fallback; } };
+      const save = (key, value) => { try { localStorage.setItem(PREFIX + key, JSON.stringify(value)); } catch (e) { console.warn('Pokedesk could not save data', e); } };
+      const seedTasks = [
+        { id: 'q1', title: 'Plan the day before opening socials', category: 'daily', xp: 10 },
+        { id: 'q2', title: 'Drink water after waking up', category: 'daily', xp: 10 },
+        { id: 'q3', title: 'Review this month’s main goal', category: 'weekly', xp: 15 },
+        { id: 'q4', title: 'Move one important work task forward', category: 'work', xp: 15 },
+        { id: 'q5', title: 'Log today’s workout or recovery', category: 'fitness', xp: 15 },
+        { id: 'q6', title: 'Write a short daily journal entry', category: 'daily', xp: 10 },
+      ];
+      const books = [
+        { id: 'all', title: 'All Quests', color: 'blue', icon: '📘', hint: 'Every mission in one place' },
+        { id: 'weekly', title: 'Weekly Quests', color: 'rust', icon: '📙', hint: 'Build momentum' },
+        { id: 'daily', title: 'Daily Routine', color: 'amber', icon: '📔', hint: 'Small wins count' },
+        { id: 'work', title: 'Work Log', color: 'violet', icon: '📕', hint: 'Move your craft forward' },
+        { id: 'fitness', title: 'Fitness', color: 'teal', icon: '📗', hint: 'Train, recover, repeat' },
+        { id: 'life', title: 'Life Admin', color: 'peach', icon: '📒', hint: 'Bills and little chores' },
+      ];
+      const fallback = [25, 1, 4, 7, 133, 39, 52, 143, 6, 94, 150, 151, 54, 16, 58, 63, 104].map((id) => ({ id, name: ({ 25: 'pikachu', 1: 'bulbasaur', 4: 'charmander', 7: 'squirtle', 133: 'eevee', 39: 'jigglypuff', 52: 'meowth', 143: 'snorlax', 6: 'charizard', 94: 'gengar', 150: 'mewtwo', 151: 'mew', 54: 'psyduck', 16: 'pidgey', 58: 'growlithe', 63: 'abra', 104: 'cubone' })[id], label: ({ 25: 'pikachu', 1: 'bulbasaur', 4: 'charmander', 7: 'squirtle', 133: 'eevee', 39: 'jigglypuff', 52: 'meowth', 143: 'snorlax', 6: 'charizard', 94: 'gengar', 150: 'mewtwo', 151: 'mew', 54: 'psyduck', 16: 'pidgey', 58: 'growlithe', 63: 'abra', 104: 'cubone' })[id], image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png` }));
+      const cachedDex = read('pokemon-index-cache', null);
+      const cacheIsFresh = Boolean(cachedDex?.savedAt && Date.now() - cachedDex.savedAt < 1000 * 60 * 60 * 24 && Array.isArray(cachedDex.items));
+      const state = {
+        page: 'home', date: read('selected-date', today()),
+        tasks: read('tasks', seedTasks), completions: read('completions', {}), logs: read('daily-logs', {}),
+        finance: read('finance', { income: '50000', budget: '12000', expenses: [] }),
+        xp: read('xp', 0), coins: read('coins', 30), caught: read('caught-pokemon', [25]), partner: read('partner-pokemon', 25),
+        activeBook: 'all', pokemon: cachedDex?.items || fallback, pokemonLoading: !cacheIsFresh, pokemonError: false,
+      };
+      let modal = null;
+      let timerMode = 'focus'; let timerRemaining = 25 * 60; let timerRunning = false; let timerCompleted = false; let timerInterval = null;
+      const durations = { focus: 25 * 60, short: 5 * 60, long: 15 * 60 };
+      const log = () => state.logs[state.date] || {};
+      const saveAll = () => {
+        save('selected-date', state.date); save('tasks', state.tasks); save('completions', state.completions); save('daily-logs', state.logs);
+        save('finance', state.finance); save('xp', state.xp); save('coins', state.coins); save('caught-pokemon', state.caught); save('partner-pokemon', state.partner);
+      };
+      const updateLog = (patch) => { state.logs[state.date] = { ...log(), ...patch }; save('daily-logs', state.logs); };
+      const pkmn = (id) => state.pokemon.find((p) => p.id === Number(id)) || fallback.find((p) => p.id === Number(id));
+      const pretty = (name = '') => name.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      const sprite = (pokemon, artwork = false, extra = '') => pokemon ? `<span class="pokemon-sprite ${extra}"><img src="${artwork ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png` : pokemon.image}" alt="${esc(pretty(pokemon.name))}" loading="lazy" onerror="this.style.display='none';this.parentElement.classList.add('sprite-error')"></span>` : '<span class="pokemon-placeholder">?</span>';
+      const tag = (text, kind = '') => `<span class="tag ${kind}">${text}</span>`;
+      const heading = (eyebrow, title, action = '', dataAction = '') => `<div class="section-heading"><div><span class="eyebrow">${eyebrow}</span><h2>${title}</h2></div>${action ? `<button class="text-action" data-action="${dataAction}">${action} <span>→</span></button>` : ''}</div>`;
+      const datePicker = (aria = 'Selected date', monthShift = false) => `<div class="date-picker"><button class="icon-button" data-action="prev-date" data-step="${monthShift ? -30 : -1}" aria-label="Previous ${monthShift ? 'month' : 'date'}">‹</button><label>▦ <input aria-label="${aria}" type="date" data-role="date" value="${esc(state.date)}"></label><button class="icon-button" data-action="next-date" data-step="${monthShift ? 30 : 1}" aria-label="Next ${monthShift ? 'month' : 'date'}">›</button>${monthShift ? '' : `<button class="today-button" data-action="today">Today</button>`}</div>`;
+      const pageIntro = (eyebrow, title, sub, extra = '') => `<div class="page-intro"><div><span class="eyebrow">${eyebrow}</span><h1>${title} <span class="wave">✦</span></h1><p class="muted">${sub}</p></div>${extra}</div>`;
+      const activeCompleted = () => state.completions[state.date] || [];
+      const completedTotal = () => Object.values(state.completions).reduce((n, ids) => n + ids.length, 0);
+
+      function renderHome() {
+        const completed = activeCompleted(); const tasks = state.tasks; const progress = tasks.length ? Math.round(completed.length / tasks.length * 100) : 0;
+        const partner = pkmn(state.partner) || pkmn(25); const spent = (state.finance.expenses || []).filter((e) => e.date === state.date && e.kind !== 'income').reduce((n, e) => n + Number(e.amount || 0), 0);
+        const filtered = tasks.filter((task) => state.activeBook === 'all' || task.category === state.activeBook);
+        return `${pageIntro('YOUR DAILY ADVENTURE', 'Hey, trainer', 'A little progress goes a long way. What’s your next move?', datePicker())}
+    <section class="hero-grid">
+      <article class="world-card"><div class="world-topline">${tag('<span class="live-dot"></span> YOUR WORLD', 'green')}<button class="world-menu" data-page="pokedex">♟</button></div>
+      <div class="world-scene"><div class="cloud cloud-one"></div><div class="cloud cloud-two"></div><div class="shrine"><div class="shrine-roof roof-one"></div><div class="shrine-roof roof-two"></div><div class="shrine-top"></div><div class="shrine-columns"><i></i><i></i><i></i><i></i></div><div class="shrine-base"></div></div>
+      <span class="flower flower-a">✿</span><span class="flower flower-b">✿</span><span class="flower flower-c">✿</span><span class="flower flower-d">✿</span><span class="flower flower-e">✿</span><span class="grass grass-a">✳</span><span class="grass grass-b">✳</span><span class="grass grass-c">✳</span><span class="grass grass-d">✳</span><span class="grass grass-e">✳</span>
+      <div class="world-pokemon pokemon-left">${sprite(pkmn(1))}</div><div class="world-pokemon pokemon-right">${sprite(pkmn(4))}</div><div class="world-partner">${sprite(partner, true)}<span>${esc(pretty(partner.name))}</span></div><div class="world-map-label"><span>⌖</span> MEADOW ROUTE <span class="route-dot"></span></div></div>
+      <div class="world-footer"><div><span class="eyebrow">YOUR PARTNER</span><strong>${esc(pretty(partner.name))}</strong><span class="muted small-text">Growing with every quest.</span></div><button class="secondary-button" data-page="pokedex">Open Pokédex →</button></div></article>
+      <div class="hero-right"><article class="stats-card"><div class="stats-head"><div><span class="eyebrow">TRAINER SUMMARY</span><strong>${dateLabel(state.date, { weekday: 'long', month: 'long', day: 'numeric' })}</strong></div><span class="weather-sticker">☀</span></div><div class="stats-row"><div class="stat"><span>Focus time</span><strong>${Math.floor(read('focus-minutes', 0) / 60)}<small>h</small> ${read('focus-minutes', 0) % 60}<small>m</small></strong></div><div class="stat"><span>Quests done</span><strong>${completed.length}<small>/${tasks.length}</small></strong></div><div class="stat"><span>New cheers</span><strong>${Math.floor(state.xp / 50)}<small>✦</small></strong></div></div><div class="trainer-level">${sprite(partner, false, 'level-avatar')}<div class="level-content"><div class="level-heading"><strong>LV. ${Math.floor(state.xp / 100) + 1} TRAINER</strong><span>${state.xp} XP</span></div><div class="xp-track"><span style="width:${state.xp % 100}%"></span></div><span class="tiny-note">${100 - state.xp % 100} XP to the next level</span></div><span class="level-trophy">🏆</span></div></article>
+      <article class="focus-card"><div class="focus-illustration"><span class="focus-spark">✧</span><div class="focus-pokemon">${sprite(partner, true)}</div></div><div class="focus-copy">${tag('✦ TRAINER MODE', 'yellow')}<h3>Make some<br>progress today.</h3><p>One focused session can change the whole day.</p><button class="primary-button" data-action="open-focus">Focus now →</button></div></article></div></section>
+    <section class="quick-stats-grid"><button class="quick-stat" data-page="routines"><span class="quick-icon mint">♟</span><span><small>GYM CHECK-IN</small><strong>${log().gym ? 'Done for today' : 'Not checked in'}</strong></span><span class="mini-status ${log().gym ? 'done' : ''}">${log().gym ? '✓' : '+'}</span></button><button class="quick-stat" data-page="routines"><span class="quick-icon peach">♨</span><span><small>WATER INTAKE</small><strong>${Number(log().water || 0)} / 8 glasses</strong><span class="micro-progress"><i style="width:${Math.min(Number(log().water || 0) / 8 * 100, 100)}%"></i></span></span><span class="mini-status">+</span></button><button class="quick-stat" data-page="finance"><span class="quick-icon lavender">₹</span><span><small>SPENT TODAY</small><strong>${money(spent)}</strong></span><span class="mini-status">↘</span></button></section>
+    <section class="quest-section">${heading('YOUR MISSION BOARD', 'Pick a quest book', 'Add a quest +', 'add-quest')}<div class="quest-books">${books.map((book) => { const count = book.id === 'all' ? tasks.length : tasks.filter(t => t.category === book.id).length; const done = book.id === 'all' ? completed.length : tasks.filter(t => t.category === book.id && completed.includes(t.id)).length; return `<button class="quest-book book-${book.color} ${state.activeBook === book.id ? 'active' : ''}" data-book="${book.id}"><span class="book-tabs"><i></i><i></i><i></i></span><span class="book-number">${String(done).padStart(2, '0')} / ${String(count).padStart(2, '0')}</span><span class="book-emoji">${book.icon}</span><strong>${book.title}</strong><span class="book-hint">${book.hint}</span><span class="book-edge"></span></button>`; }).join('')}</div></section>
+    <section class="bottom-grid"><article class="panel quest-list-panel">${heading('MAKE IT COUNT', state.activeBook === 'all' ? 'Today’s quests' : books.find(b => b.id === state.activeBook)?.title || 'Today’s quests', 'Add quest', 'add-quest')}<div class="quest-progress-line"><div class="progress-track"><span style="width:${progress}%"></span></div><span>${progress}%</span></div><div class="task-list">${filtered.length ? filtered.map((task) => { const done = completed.includes(task.id); return `<div class="task-row ${done ? 'task-done' : ''}"><button class="task-check ${done ? 'checked' : ''}" data-task="${esc(task.id)}">${done ? '✓' : ''}</button><button class="task-title-button" data-task="${esc(task.id)}">${esc(task.title)}</button><span class="task-xp">+${task.xp} XP</span></div>`; }).join('') : '<div class="empty-state"><strong>A fresh page</strong><span>Add your first quest to this book.</span></div>'}</div><div class="quest-list-footer"><span>✓ ${completed.length} completed today</span><span>◈ ${state.coins} coins</span></div></article>
+      <article class="panel journal-mini">${heading('A MOMENT FOR YOU', 'Daily journal', 'Open journal', 'page-journal')}<p class="journal-date">▦ ${dateLabel(state.date, { month: 'short', day: 'numeric', year: 'numeric' })}</p><textarea data-log="journal" maxlength="5000" placeholder="What happened today? What are you grateful for? Write it down…">${esc(log().journal || '')}</textarea><div class="journal-footer"><span>♧ Saved locally on this device</span><span>${(log().journal || '').length}/5000</span></div><button class="prompt-chip" data-action="journal-prompt">✧ Prompt me: one win from today →</button></article></section>
+    <div class="gentle-reminder">♥ <span>Consistency over perfection. Rest days and missed quests are part of the journey too.</span><span class="reminder-spark">✧</span></div>`;
+      }
+
+      function renderJournal() {
+        const prompts = ['What was the best part of today?', 'What did I learn about myself?', 'What is one thing I want to do differently tomorrow?'];
+        return `${pageIntro('YOUR PRIVATE CHRONICLE', 'Dear diary', 'Capture the little moments. Your future self will thank you.', datePicker('Journal date'))}<div class="journal-layout"><aside class="panel journal-sidebar"><div class="journal-stamp">✿</div><span class="eyebrow">YOUR STORY, YOUR SPACE</span><h2>${dateLabel(state.date, { weekday: 'long', month: 'long', day: 'numeric' })}</h2><p class="muted">No pressure to make it perfect. Just make it yours.</p><div class="privacy-note"><span>♧</span><div><strong>Private by default</strong><span>Your entry is saved in this browser on this device.</span></div></div><div class="journal-prompt"><span class="eyebrow">A LITTLE INSPIRATION</span><p>“${prompts[Math.abs(new Date(state.date + 'T12:00:00').getDate()) % prompts.length]}”</p><button class="text-action" data-action="journal-prompt">Use this prompt →</button></div></aside><section class="panel journal-editor"><div class="editor-toolbar">${tag('DAILY ENTRY', 'green')}<span><span class="saved-dot"></span> Auto-saved</span></div><input class="journal-title-input" data-log="journalTitle" value="${esc(log().journalTitle || '')}" placeholder="Give today a title (optional)"><textarea class="journal-main-textarea" data-log="journal" maxlength="20000" placeholder="Start writing…&#10;&#10;What did you do today? What felt good? What was difficult? What do you want to remember?">${esc(log().journal || '')}</textarea><div class="editor-footer"><span>▤ ${(log().journal || '').trim() ? (log().journal || '').trim().split(/\s+/).length : 0} words</span><span>${(log().journal || '').length}/20,000 characters</span></div></section></div>`;
+      }
+
+      function renderRoutines() {
+        const l = log(); const meals = l.meals || {};
+        return `${pageIntro('CARE FOR YOUR PLAYER ONE', 'Daily routines', 'Train, fuel up and recover. Your health is the main quest.', datePicker())}<div class="routine-grid"><section class="panel routine-card"><div class="routine-icon mint">🏋️</div><span class="eyebrow">FITNESS</span><h2>Gym check-in</h2><p class="muted">Show up for your body, even if it’s a lighter day.</p><button class="primary-button ${l.gym ? 'done-button' : ''}" data-action="toggle-gym">${l.gym ? '✓ Checked in' : '+ Check in today'}</button><label class="form-label">Workout notes<textarea data-log="workout" placeholder="Push day, 45 min walk, recovery…">${esc(l.workout || '')}</textarea></label></section>
+    <section class="panel routine-card"><div class="routine-icon peach">♨</div><span class="eyebrow">NUTRITION</span><h2>Meals & fuel</h2><p class="muted">A simple record of what you eat. No judgment, just awareness.</p>${['Breakfast', 'Lunch', 'Dinner', 'Snacks'].map(meal => `<label class="meal-row"><span>${meal}</span><input data-meal="${meal}" value="${esc(meals[meal] || '')}" placeholder="What did you have?"></label>`).join('')}<label class="form-label water-label">Water glasses <div class="counter-control"><button data-action="water-minus">−</button><strong>${Number(l.water || 0)}</strong><button data-action="water-plus">+</button><span class="muted small-text">goal: 8</span></div></label></section>
+    <section class="panel routine-card"><div class="routine-icon lavender">✧</div><span class="eyebrow">WELLNESS</span><h2>Daily care</h2><p class="muted">Small, repeatable rituals are powerful.</p><label class="form-label">Skincare / grooming notes<textarea data-log="grooming" placeholder="AM routine, sunscreen, haircare…">${esc(l.grooming || '')}</textarea></label><label class="check-row"><input type="checkbox" data-log-check="supplements" ${l.supplements ? 'checked' : ''}><span><strong>Supplement logged</strong><small>Record that you followed your usual plan.</small></span></label><label class="form-label">Sleep (hours)<input type="number" min="0" max="24" step="0.25" data-log="sleep" value="${esc(l.sleep || '')}" placeholder="e.g. 7.5"></label><label class="form-label">Mood today<select data-log="mood"><option value="">Choose a mood…</option>${['Great', 'Good', 'Okay', 'Low', 'Overwhelmed'].map(m => `<option ${l.mood === m ? 'selected' : ''}>${m}</option>`).join('')}</select></label></section><section class="panel gym-badges"><span class="eyebrow">TRAINER MILESTONES</span><h2>Gym badge collection</h2><p class="muted">Earn badges by checking in on different days. Rest days are part of training, too.</p><div class="badge-grid">${[{ n: 'First Step', e: '🌱', d: 1 }, { n: 'Boulder Badge', e: '🪨', d: 3 }, { n: 'Cascade Badge', e: '💧', d: 7 }, { n: 'Thunder Badge', e: '⚡', d: 14 }, { n: 'Rainbow Badge', e: '🌈', d: 21 }, { n: 'Soul Badge', e: '💜', d: 30 }, { n: 'Marsh Badge', e: '🔮', d: 50 }, { n: 'Earth Badge', e: '🏆', d: 100 }].map(b => { const count = Object.values(state.logs).filter(x => x && x.gym).length; const earned = count >= b.d; return `<div class="gym-badge ${earned ? 'earned' : ''}"><span class="badge-emblem">${b.e}</span><strong>${b.n}</strong><small>${earned ? 'UNLOCKED' : `${count}/${b.d} gym days`}</small></div>` }).join('')}</div></section></div><p class="tiny-note routine-disclaimer">Personal tracking only. This prototype does not provide medical, dietetic or supplement advice.</p>`;
+      }
+
+      function renderFinance() {
+        const month = state.date.slice(0, 7); const items = (state.finance.expenses || []).filter(e => e.date?.startsWith(month)); const bills = state.finance.bills || []; const billPayments = state.finance.billPayments || {}; const spent = items.filter(e => e.kind !== 'income').reduce((s, e) => s + Number(e.amount || 0), 0); const extra = items.filter(e => e.kind === 'income').reduce((s, e) => s + Number(e.amount || 0), 0); const budget = Number(state.finance.budget || 0); const income = Number(state.finance.income || 0) + extra;
+        return `${pageIntro('YOUR COIN POUCH', 'Money map', 'Understand your spending without making finance feel complicated.', datePicker('Finance date', true))}<div class="finance-stat-grid"><article class="panel finance-stat"><span class="finance-icon mint">↘</span><span class="eyebrow">MONTHLY INCOME</span><strong>${money(income)}</strong><label class="form-label inline-setting">Salary / monthly income<input type="number" min="0" data-finance="income" value="${esc(state.finance.income)}"></label></article><article class="panel finance-stat"><span class="finance-icon peach">₹</span><span class="eyebrow">SPENDING THIS MONTH</span><strong>${money(spent)}</strong><div class="progress-track finance-track"><span style="width:${budget ? Math.min(100, spent / budget * 100) : 0}%"></span></div><span class="tiny-note">${budget ? Math.round(spent / budget * 100) + '% of your planned budget' : 'Set a budget to compare spending'}</span></article><article class="panel finance-stat"><span class="finance-icon lavender">◈</span><span class="eyebrow">PLANNED BUDGET</span><strong>${money(budget)}</strong><label class="form-label inline-setting">Monthly budget<input type="number" min="0" data-finance="budget" value="${esc(state.finance.budget)}"></label></article></div>
+    <div class="finance-layout"><form class="panel transaction-form" id="transaction-form">${heading('QUICK CAPTURE', 'Add transaction')}<div class="segmented-control"><button type="button" data-kind="expense" class="${window.transactionKind !== 'income' ? 'selected' : ''}">Expense</button><button type="button" data-kind="income" class="${window.transactionKind === 'income' ? 'selected' : ''}">Income</button></div><label class="form-label">Description<input name="description" required placeholder="e.g. Groceries, salary, internet bill"></label><label class="form-label">Amount (₹)<input name="amount" min="1" step="0.01" type="number" required placeholder="0.00"></label><label class="form-label">Category<select name="category">${['Food', 'Transport', 'Bills', 'Shopping', 'Health', 'Gym', 'Entertainment', 'EMI / Debt', 'Savings', 'Salary', 'Other'].map(v => `<option>${v}</option>`).join('')}</select></label><button class="primary-button full-button" type="submit">+ Add transaction</button><p class="tiny-note">This local prototype does not connect to your bank.</p></form>
+    <section class="panel transactions-panel">${heading(dateLabel(`${month}-15`, { month: 'long', year: 'numeric' }).toUpperCase(), 'Transaction history')}<div class="transaction-list">${items.length ? [...items].sort((a, b) => b.date.localeCompare(a.date)).map(item => `<div class="transaction-row"><span class="transaction-icon ${item.kind === 'income' ? 'income-icon' : ''}">${item.kind === 'income' ? '↙' : '₹'}</span><div class="transaction-info"><strong>${esc(item.description)}</strong><span>${esc(item.category)} · ${dateLabel(item.date, { month: 'short', day: 'numeric' })}</span></div><strong class="${item.kind === 'income' ? 'positive-amount' : 'negative-amount'}">${item.kind === 'income' ? '+' : '−'}${money(item.amount)}</strong><button class="icon-button delete-transaction" data-delete-transaction="${esc(item.id)}" aria-label="Delete transaction">×</button></div>`).join('') : '<div class="empty-state"><span>₹</span><strong>No transactions yet</strong><span>Add your first expense or income to start the monthly picture.</span></div>'}</div><div class="transaction-summary"><span>Net tracked this month</span><strong>${money(income - spent)}</strong></div></section></div>
+    <section class="panel bills-panel">${heading('RECURRING PAYMENTS', 'Monthly bills')}<p class="muted bills-intro">Add a recurring bill once, then mark it paid for each month. Marking it paid does not create a second expense automatically.</p><form class="bill-form" id="bill-form"><label class="form-label">Bill name<input name="name" required maxlength="80" placeholder="Rent, mobile plan, EMI…"></label><label class="form-label">Amount (₹)<input name="amount" type="number" min="1" step="0.01" required placeholder="0.00"></label><label class="form-label">Due day<input name="dueDay" type="number" min="1" max="31" value="5" required></label><label class="form-label">Category<select name="category"><option>Bills</option><option>EMI / Debt</option><option>Utilities</option><option>Subscription</option><option>Rent</option><option>Other</option></select></label><button class="primary-button bill-add-button" type="submit">+ Add bill</button></form><div class="bill-list">${bills.length ? bills.map(bill => { const key = `${month}:${bill.id}`; const paid = Boolean(billPayments[key]); const overdue = !paid && Number(bill.dueDay) < Number(state.date.slice(8, 10)); return `<div class="bill-row"><span class="bill-status-icon ${paid ? 'paid' : overdue ? 'overdue' : ''}">${paid ? '✓' : '▦'}</span><div class="bill-info"><strong>${esc(bill.name)}</strong><span>${esc(bill.category)} · Due day ${bill.dueDay}</span></div><strong class="bill-amount">${money(bill.amount)}</strong>${tag(paid ? 'Paid' : overdue ? 'Past due' : 'Upcoming', paid ? 'green' : overdue ? 'yellow' : '')}<button class="secondary-button bill-toggle ${paid ? 'bill-unpaid' : ''}" data-bill-toggle="${esc(bill.id)}">${paid ? 'Mark unpaid' : 'Mark paid'}</button><button class="icon-button" data-bill-delete="${esc(bill.id)}" aria-label="Delete bill">×</button></div>` }).join('') : '<div class="empty-state"><span>▦</span><strong>No monthly bills yet</strong><span>Add rent, subscriptions, EMIs or utility bills to keep due dates visible.</span></div>'}</div></section><p class="tiny-note routine-disclaimer">Budget values, bills and transactions are saved in this browser only. This is not financial advice.</p>`;
+      }
+
+      function renderPokedex() {
+        const caught = state.pokemon.filter(p => state.caught.includes(p.id)); const partner = pkmn(state.partner) || pkmn(25);
+        return `${pageIntro('COLLECT AS YOU GROW', 'Your Pokédex', 'Every completed quest earns you closer to new companions.', `<button class="primary-button" data-action="open-dex">⌕ Browse Kanto</button>`)}<div class="dex-summary panel"><div class="dex-summary-copy">${tag('🎮 KANTO COLLECTION', 'yellow')}<h2>Small wins. New friends.</h2><p class="muted">Catch a Pokémon with coins earned from completing quests. Choose a partner to see them around your world.</p><div class="dex-summary-stats"><div><strong>${state.caught.length}</strong><span>Collected</span></div><div><strong>${state.pokemon.length || '—'}</strong><span>In Pokédex</span></div><div><strong>${state.coins}</strong><span>Coins</span></div></div></div><div class="dex-feature-art"><div class="dex-orbit orbit-one"></div><div class="dex-orbit orbit-two"></div>${sprite(partner, true, 'dex-feature-pokemon')}</div></div>${heading('YOUR COLLECTION', 'Your companions', 'Browse all 151', 'open-dex')}<div class="collection-grid">${caught.length ? caught.map(p => `<article class="panel collection-card"><div class="collection-number">No. ${String(p.id).padStart(3, '0')}</div>${sprite(p, true, 'collection-art')}<strong>${esc(pretty(p.name))}</strong>${p.id === state.partner ? tag('Current partner', 'green') : `<button class="secondary-button" data-partner="${p.id}">Choose partner</button>`}</article>`).join('') : '<div class="empty-state"><strong>Your adventure is just beginning</strong><span>Complete quests to earn coins, then catch your first companion.</span><button class="primary-button" data-action="open-dex">Explore Pokédex</button></div>'}</div>${state.pokemonLoading ? '<p class="tiny-note">Loading Pokémon data…</p>' : ''}${state.pokemonError ? '<p class="tiny-note">PokéAPI is unavailable right now. A starter list is shown instead.</p>' : ''}`;
+      }
+
+      function renderSettings() {
+        return `${pageIntro('YOUR SPACE, YOUR RULES', 'Settings', 'Your first Pokedesk build is local-first and personal.')}<div class="settings-grid"><article class="panel settings-card"><div class="routine-icon lavender">♧</div><h2>Privacy & storage</h2><p class="muted">Your journal, routines, finances and goals are saved in this browser. They are not uploaded to a Pokedesk server.</p><button class="secondary-button" data-action="export">Export my data →</button></article><article class="panel settings-card"><div class="routine-icon peach">♟</div><h2>Theme & world</h2><p class="muted">This MVP focuses on one Pokémon-inspired light theme. Theme styles are separated from the data model for future expansion.</p>${tag('Adventure meadow · Active', 'green')}</article><article class="panel settings-card danger-card"><div class="routine-icon red">⚙</div><h2>Reset local data</h2><p class="muted">This permanently removes Pokedesk data saved in this browser. Export it first if you want a copy.</p><button class="secondary-button danger-outline" data-action="confirm-reset">Reset local data</button></article></div><p class="tiny-note routine-disclaimer">Browser storage can be cleared or lost with the device. Export a backup regularly.</p>`;
+      }
+
+      const pages = { home: renderHome, journal: renderJournal, routines: renderRoutines, finance: renderFinance, pokedex: renderPokedex, settings: renderSettings };
+      function render() {
+        document.querySelectorAll('[data-page]').forEach((el) => { el.classList.toggle('nav-active', el.dataset.page === state.page); el.classList.toggle('active', el.dataset.page === state.page); });
+        document.querySelectorAll('[data-current-page]').forEach(el => el.textContent = ({ home: 'Home', journal: 'Journal', routines: 'Routines', finance: 'Finance', pokedex: 'Pokédex', settings: 'Settings' })[state.page] || 'Home');
+        document.getElementById('app-content').innerHTML = (pages[state.page] || renderHome)();
+      }
+
+      function openFocus() {
+        modal = 'focus'; timerRemaining = timerRemaining || durations[timerMode]; timerCompleted = false; renderModal();
+      }
+      function renderModal() {
+        const host = document.getElementById('modal-host'); if (!modal) { host.innerHTML = ''; return; }
+        if (modal === 'focus') {
+          const progress = (durations[timerMode] - timerRemaining) / durations[timerMode] * 100;
+          host.innerHTML = `<div class="modal-backdrop" data-action="backdrop-close"><section class="focus-modal" role="dialog" aria-modal="true"><button class="icon-button modal-close" data-action="close-modal">×</button><div class="focus-modal-mark">◉</div><span class="eyebrow">TRAIN YOUR ATTENTION</span><h2>Focus, trainer.</h2><p class="muted">One quest. One window. No distractions.</p><div class="timer-modes">${[['focus', 'Focus'], ['short', 'Short break'], ['long', 'Long break']].map(([id, label]) => `<button class="${timerMode === id ? 'selected' : ''}" data-timer-mode="${id}">${label}</button>`).join('')}</div><div class="timer-ring" style="--timer-progress:${progress}%"><div><strong id="timer-clock">${String(Math.floor(timerRemaining / 60)).padStart(2, '0')}:${String(timerRemaining % 60).padStart(2, '0')}</strong><span id="timer-status">${timerCompleted ? 'SESSION COMPLETE' : timerRunning ? 'IN FOCUS' : 'READY WHEN YOU ARE'}</span></div></div>${timerCompleted ? '<p class="success-note">✧ Nice work! One focus session added.</p>' : ''}<div class="timer-actions"><button class="primary-button" data-action="timer-start">${timerRunning ? 'Pause session' : timerRemaining === 0 ? 'Start again' : 'Start focus'} →</button><button class="secondary-button" data-action="timer-reset">Reset</button></div><p class="tiny-note">Keep Pokedesk open while the timer runs. No browser notifications required.</p></section></div>`;
+        } else if (modal === 'add-quest') {
+          host.innerHTML = `<div class="modal-backdrop" data-action="backdrop-close"><form id="add-quest-form" class="simple-modal"><button type="button" class="icon-button modal-close" data-action="close-modal">×</button><span class="eyebrow">NEW MISSION</span><h2>Add a quest</h2><p class="muted">Turn one small intention into your next win.</p><label class="form-label">Quest name<input name="title" required maxlength="100" autofocus placeholder="e.g. Read for 20 minutes"></label><label class="form-label">Quest book<select name="category">${books.filter(b => b.id !== 'all').map(b => `<option value="${b.id}" ${state.activeBook === b.id ? 'selected' : ''}>${b.title}</option>`).join('')}</select></label><button class="primary-button full-button" type="submit">Create quest +</button></form></div>`;
+        } else if (modal === 'dex') {
+          host.innerHTML = `<div class="modal-backdrop pokedex-backdrop" data-action="backdrop-close"><section class="pokedex-modal" role="dialog" aria-modal="true"><div class="dex-modal-head"><div><span class="eyebrow">KANTO FIELD GUIDE</span><h2>Pokédex <span>${state.pokemon.length}</span></h2><p class="muted">Collect companions by showing up for yourself.</p></div><button class="icon-button" data-action="close-modal">×</button></div><div class="dex-toolbar"><div class="search-box">⌕ <input id="dex-search" placeholder="Search Pokémon or dex number..."></div>${tag(`◈ ${state.coins} coins`, 'yellow')}</div><div class="pokemon-grid" id="dex-grid">${dexItems(state.pokemon, '')}</div><p class="tiny-note dex-note">The index is cached locally for 24 hours. Catching uses in-app coins earned from completed quests.</p></section></div>`;
+        } else if (modal === 'reset') {
+          host.innerHTML = `<div class="modal-backdrop"><section class="simple-modal"><span class="eyebrow">ARE YOU SURE?</span><h2>Reset this save?</h2><p class="muted">This deletes your Pokedesk data from this browser. Export first if needed.</p><div class="confirm-actions"><button class="danger-button" data-action="reset-now">Yes, reset everything</button><button class="secondary-button" data-action="close-modal">Cancel</button></div></section></div>`;
+        }
+      }
+      function dexItems(items, search) {
+        return items.filter(p => p.label.toLowerCase().includes(search.toLowerCase()) || String(p.id).includes(search)).map((p) => {
+          const caught = state.caught.includes(p.id), partner = state.partner === p.id;
+          const action = partner ? '<span class="tag green">Your partner</span>' : caught ? `<button class="mini-action" data-partner="${p.id}">Choose partner</button>` : `<button class="mini-action catch-action" data-catch="${p.id}" ${state.coins < 20 ? 'disabled' : ''}>+ Catch · 20</button>`;
+          return `<article class="pokemon-card ${caught ? 'is-caught' : ''}"><div class="pokemon-card-number">#${String(p.id).padStart(3, '0')}${caught ? ' ✓' : ''}</div>${sprite(p, true, 'pokemon-card-art')}<strong>${esc(pretty(p.name))}</strong>${action}</article>`;
+        }).join('') || '<div class="empty-state"><strong>No Pokémon found</strong><span>Try another name or number.</span></div>';
+      }
+
+      function toggleTask(id) {
+        const task = state.tasks.find(t => t.id === id); if (!task) return;
+        const done = activeCompleted(); const isDone = done.includes(id);
+        state.completions[state.date] = isDone ? done.filter(v => v !== id) : [...done, id];
+        state.xp = Math.max(0, state.xp + (isDone ? -task.xp : task.xp)); state.coins = Math.max(0, state.coins + (isDone ? -5 : 5)); saveAll(); render();
+      }
+      function addQuest(title, category) { state.tasks.unshift({ id: `q-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`, title, category, xp: 10 }); state.activeBook = category; saveAll(); modal = null; renderModal(); render(); }
+      function catchPokemon(id) { if (state.caught.includes(id) || state.coins < 20) return; state.coins -= 20; state.caught.push(id); saveAll(); render(); if (modal === 'dex') renderModal(); }
+      function setPartner(id) { if (state.caught.includes(id)) { state.partner = id; saveAll(); render(); if (modal === 'dex') renderModal(); } }
+      function updateDate(delta) { state.date = shiftDate(state.date, delta); saveAll(); render(); }
+      function exportData() { const backup = { exportedAt: new Date().toISOString(), version: 1, ...state }; const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `pokedesk-backup-${state.date}.json`; a.click(); URL.revokeObjectURL(url); }
+      function resetData() { Object.keys(localStorage).filter(k => k.startsWith(PREFIX)).forEach(k => localStorage.removeItem(k)); location.reload(); }
+
+      document.addEventListener('click', (event) => {
+        const target = event.target.closest('button,[data-action],[data-page],[data-book],[data-task],[data-partner],[data-catch],[data-kind],[data-timer-mode],[data-bill-toggle],[data-bill-delete]'); if (!target) return;
+        if (target.dataset.page) { state.page = target.dataset.page; modal = null; renderModal(); render(); return; }
+        if (target.dataset.action === 'prev-date') { updateDate(Number(target.dataset.step || -1)); return; } if (target.dataset.action === 'next-date') { updateDate(Number(target.dataset.step || 1)); return; } if (target.dataset.action === 'today') { state.date = today(); saveAll(); render(); return; }
+        if (target.dataset.book) { state.activeBook = target.dataset.book; render(); return; } if (target.dataset.task) { toggleTask(target.dataset.task); return; }
+        if (target.dataset.action === 'add-quest') { modal = 'add-quest'; renderModal(); return; } if (target.dataset.action === 'page-journal') { state.page = 'journal'; render(); return; }
+        if (target.dataset.action === 'open-focus') { openFocus(); return; } if (target.dataset.action === 'open-dex') { modal = 'dex'; renderModal(); return; } if (target.dataset.action === 'close-modal') { modal = null; clearInterval(timerInterval); timerRunning = false; renderModal(); return; }
+        if (target.dataset.action === 'backdrop-close' && event.target === target) { modal = null; renderModal(); return; }
+        if (target.dataset.action === 'journal-prompt') { const current = log().journal || ''; updateLog({ journal: `${current}${current ? '\n\n' : ''}One win from today: ` }); render(); const area = document.querySelector('[data-log="journal"]'); if (area) { area.focus(); area.setSelectionRange(area.value.length, area.value.length); } return; }
+        if (target.dataset.action === 'toggle-gym') { updateLog({ gym: !log().gym }); render(); return; } if (target.dataset.action === 'water-plus') { updateLog({ water: Math.min(30, Number(log().water || 0) + 1) }); render(); return; } if (target.dataset.action === 'water-minus') { updateLog({ water: Math.max(0, Number(log().water || 0) - 1) }); render(); return; }
+        if (target.dataset.action === 'export') { exportData(); return; } if (target.dataset.action === 'confirm-reset') { modal = 'reset'; renderModal(); return; } if (target.dataset.action === 'reset-now') { resetData(); return; }
+        if (target.dataset.kind) { window.transactionKind = target.dataset.kind; render(); return; }
+        if (target.dataset.partner) { setPartner(Number(target.dataset.partner)); return; } if (target.dataset.catch) { catchPokemon(Number(target.dataset.catch)); return; }
+        if (target.dataset.billToggle) { const key = `${state.date.slice(0, 7)}:${target.dataset.billToggle}`; state.finance.billPayments = { ...(state.finance.billPayments || {}), [key]: !state.finance.billPayments?.[key] }; saveAll(); render(); return; }
+        if (target.dataset.billDelete) { state.finance.bills = (state.finance.bills || []).filter(b => b.id !== target.dataset.billDelete); saveAll(); render(); return; }
+        if (target.dataset.timerMode) { timerMode = target.dataset.timerMode; timerRemaining = durations[timerMode]; timerRunning = false; timerCompleted = false; clearInterval(timerInterval); renderModal(); return; }
+        if (target.dataset.action === 'timer-start') { if (timerRunning) { timerRunning = false; clearInterval(timerInterval); renderModal(); } else { if (timerRemaining === 0) timerRemaining = durations[timerMode]; timerRunning = true; timerCompleted = false; renderModal(); timerInterval = window.setInterval(() => { timerRemaining = Math.max(0, timerRemaining - 1); const clock = document.getElementById('timer-clock'); const status = document.getElementById('timer-status'); const ring = document.querySelector('.timer-ring'); if (clock) clock.textContent = `${String(Math.floor(timerRemaining / 60)).padStart(2, '0')}:${String(timerRemaining % 60).padStart(2, '0')}`; if (ring) ring.style.setProperty('--timer-progress', `${(durations[timerMode] - timerRemaining) / durations[timerMode] * 100}%`); if (timerRemaining === 0) { timerRunning = false; timerCompleted = true; clearInterval(timerInterval); if (timerMode === 'focus') { state.xp += 15; state.coins += 5; save('focus-minutes', read('focus-minutes', 0) + 25); saveAll(); } if (status) status.textContent = 'SESSION COMPLETE'; const btn = document.querySelector('[data-action="timer-start"]'); if (btn) btn.textContent = 'Start again →'; const ringModal = document.querySelector('.focus-modal'); if (ringModal) { const notice = document.createElement('p'); notice.className = 'success-note'; notice.textContent = '✧ Nice work! Session complete.'; ringModal.querySelector('.timer-actions').before(notice); } } }, 1000); } return; }
+        if (target.dataset.action === 'timer-reset') { timerRunning = false; clearInterval(timerInterval); timerRemaining = durations[timerMode]; timerCompleted = false; renderModal(); return; }
+      });
+
+      document.addEventListener('input', (event) => {
+        const el = event.target;
+        if (el.matches('[data-role="date"]')) { if (el.value) { state.date = el.value; saveAll(); render(); } return; }
+        if (el.matches('[data-log]')) { updateLog({ [el.dataset.log]: el.value }); const count = document.querySelector('.editor-footer'); if (count && el.dataset.log === 'journal') { const text = el.value; count.innerHTML = `<span>▤ ${text.trim() ? text.trim().split(/\s+/).length : 0} words</span><span>${text.length}/20,000 characters</span>`; } return; }
+        if (el.matches('[data-meal]')) { updateLog({ meals: { ...(log().meals || {}), [el.dataset.meal]: el.value } }); return; }
+        if (el.matches('[data-finance]')) { state.finance[el.dataset.finance] = el.value; save('finance', state.finance); return; }
+        if (el.id === 'dex-search') { const grid = document.getElementById('dex-grid'); if (grid) grid.innerHTML = dexItems(state.pokemon, el.value); return; }
+      });
+      document.addEventListener('change', (event) => { const el = event.target; if (el.matches('[data-log-check]')) updateLog({ [el.dataset.logCheck]: el.checked }); if (el.matches('[data-log="mood"]')) updateLog({ mood: el.value }); if (el.matches('[data-finance]')) { state.finance[el.dataset.finance] = el.value; save('finance', state.finance); render(); } saveAll(); });
+      document.addEventListener('submit', (event) => {
+        if (event.target.id === 'bill-form') { event.preventDefault(); const data = new FormData(event.target); const name = String(data.get('name') || '').trim(); const amount = Number(data.get('amount')); const dueDay = Math.min(31, Math.max(1, Number(data.get('dueDay')) || 1)); if (!name || !Number.isFinite(amount) || amount <= 0) return; state.finance.bills = [{ id: `bill-${Date.now()}`, name, amount, dueDay, category: String(data.get('category') || 'Bills') }, ...(state.finance.bills || [])]; saveAll(); render(); return; }
+        if (event.target.id === 'add-quest-form') { event.preventDefault(); const data = new FormData(event.target); const title = String(data.get('title') || '').trim(); const category = String(data.get('category') || 'daily'); if (title) addQuest(title, category); }
+        if (event.target.id === 'transaction-form') { event.preventDefault(); const data = new FormData(event.target); const amount = Number(data.get('amount')); const description = String(data.get('description') || '').trim(); if (!description || !Number.isFinite(amount) || amount <= 0) return; state.finance.expenses.unshift({ id: `tx-${Date.now()}`, date: state.date, description, amount, category: String(data.get('category') || 'Other'), kind: window.transactionKind || 'expense' }); saveAll(); render(); }
+      });
+      document.addEventListener('click', (event) => { const del = event.target.closest('[data-delete-transaction]'); if (del) { state.finance.expenses = state.finance.expenses.filter(item => item.id !== del.dataset.deleteTransaction); saveAll(); render(); } });
+
+      // Poké Ball cursor with a little breathing room and a soft Jigglypuff-like sparkle trail.
+      // Decorative only; disabled for touch and reduced-motion users.
+      const cursorBall = document.getElementById('cursor-pokeball');
+      const sparkleLayer = document.getElementById('cursor-sparkle-layer');
+      if (cursorBall && sparkleLayer && matchMedia('(pointer:fine)').matches && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        let lastSparkleAt = 0;
+        let lastSparkleX = 0;
+        let lastSparkleY = 0;
+        const sparkleColors = ['#f4d75e', '#f3a9d2', '#bca7ff', '#a8e5cb', '#ffffff'];
+        const makeSparkle = (x, y, big = false) => {
+          const sparkle = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          sparkle.setAttribute('viewBox', '0 0 24 24');
+          sparkle.setAttribute('class', 'cursor-sparkle');
+          sparkle.setAttribute('width', big ? '17' : '11');
+          sparkle.setAttribute('height', big ? '17' : '11');
+          sparkle.style.left = `${x}px`; sparkle.style.top = `${y}px`;
+          sparkle.style.setProperty('--sparkle-color', sparkleColors[Math.floor(Math.random() * sparkleColors.length)]);
+          sparkle.style.setProperty('--drift-x', `${Math.round(Math.random() * 28 - 14)}px`);
+          sparkle.style.setProperty('--drift-y', `${Math.round(-12 - Math.random() * 23)}px`);
+          sparkle.innerHTML = '<path d="M12 1.5 14.8 9.2 22.5 12 14.8 14.8 12 22.5 9.2 14.8 1.5 12 9.2 9.2Z" fill="var(--sparkle-color)" stroke="#fff" stroke-width=".7" stroke-linejoin="round"/>';
+          sparkleLayer.appendChild(sparkle);
+          sparkle.addEventListener('animationend', () => sparkle.remove(), { once: true });
+        };
+        document.addEventListener('mousemove', (event) => {
+          // Offset the ball to the upper-right so it never sits directly on the pointer.
+          const ballX = event.clientX + 24;
+          const ballY = event.clientY - 22;
+          cursorBall.style.left = `${ballX}px`; cursorBall.style.top = `${ballY}px`;
+          cursorBall.classList.add('visible');
+          const now = performance.now();
+          const movedEnough = Math.hypot(event.clientX - lastSparkleX, event.clientY - lastSparkleY) > 10;
+          if (movedEnough && now - lastSparkleAt > 42) {
+            makeSparkle(event.clientX + (Math.random() * 14 - 7), event.clientY + (Math.random() * 14 - 7), Math.random() > .72);
+            lastSparkleAt = now; lastSparkleX = event.clientX; lastSparkleY = event.clientY;
+          }
+        });
+        document.addEventListener('mouseleave', () => cursorBall.classList.remove('visible'));
+        document.addEventListener('mousedown', () => { cursorBall.classList.add('clicking'); makeSparkle(parseFloat(cursorBall.style.left) || 0, parseFloat(cursorBall.style.top) || 0, true); });
+        document.addEventListener('mouseup', () => cursorBall.classList.remove('clicking'));
+      }
+      render();
+      if (cacheIsFresh) { state.pokemonLoading = false; } else fetch('https://pokeapi.co/api/v2/pokemon?limit=151&offset=0', { headers: { Accept: 'application/json' } }).then(response => { if (!response.ok) throw new Error(`PokéAPI returned ${response.status}`); return response.json(); }).then(data => {
+        const items = data.results.map(p => { const id = Number(p.url.match(/\/pokemon\/(\d+)\/?$/)?.[1]); return { id, name: p.name, label: p.name.replace(/-/g, ' '), image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png` }; }).filter(p => Number.isFinite(p.id));
+        state.pokemon = items; state.pokemonLoading = false; state.pokemonError = false; save('pokemon-index-cache', { savedAt: Date.now(), items }); render(); if (modal === 'dex') renderModal();
+      }).catch(() => { state.pokemonLoading = false; state.pokemonError = true; state.pokemon = state.pokemon.length ? state.pokemon : fallback; render(); if (modal === 'dex') renderModal(); });
+    })();
+
+  </script>
+</body>
+
+</html>
