@@ -106,8 +106,12 @@ async function loginUser({ username, password }) {
 }
 
 async function getAllUsers() {
-  const users = await User.find().select('username displayName avatar createdAt');
-  return users.map((u) => u.toPublicJSON());
+  try {
+    const users = await User.find().select('username displayName avatar createdAt').maxTimeMS(2000);
+    return users.map((u) => u.toPublicJSON());
+  } catch (err) {
+    return [];
+  }
 }
 
 module.exports = {
@@ -116,3 +120,4 @@ module.exports = {
   loginUser,
   getAllUsers,
 };
+

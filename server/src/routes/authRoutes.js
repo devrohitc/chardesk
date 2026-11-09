@@ -11,3 +11,4 @@ router.get('/me', authMiddleware, authController.getMe);
 router.get('/users', authController.listUsers);
 
 module.exports = router;
+

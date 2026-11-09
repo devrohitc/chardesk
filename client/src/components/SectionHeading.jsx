@@ -19,3 +19,4 @@ export function SectionHeading({ eyebrow, title, action, onAction }) {
 }
 
 export default SectionHeading;
+

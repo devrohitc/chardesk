@@ -63,3 +63,4 @@ userSchema.methods.toPublicJSON = function () {
 };
 
 module.exports = mongoose.model('User', userSchema);
+

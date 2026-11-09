@@ -379,3 +379,4 @@ export function FinancePage({ selectedDate, setSelectedDate, finance, setFinance
 }
 
 export default FinancePage;
+

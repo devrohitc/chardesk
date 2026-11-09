@@ -38,3 +38,4 @@ test('Auth API Validation', async (t) => {
     assert.strictEqual(res.body.success, false);
   });
 });
+

@@ -111,3 +111,4 @@ export function PokemonModal({
 }
 
 export default PokemonModal;
+

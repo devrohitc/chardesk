@@ -16,3 +16,4 @@ router.use('/trainer', trainerRoutes);
 router.use('/health', healthRoutes);
 
 module.exports = router;
+

@@ -45,3 +45,4 @@ export function clearPokedeskData() {
     .filter((key) => key.startsWith(prefix))
     .forEach((key) => localStorage.removeItem(key));
 }
+

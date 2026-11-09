@@ -83,3 +83,4 @@ export default {
   put: (endpoint, body, headers) => request(endpoint, { method: 'PUT', body, headers }),
   delete: (endpoint, headers) => request(endpoint, { method: 'DELETE', headers }),
 };
+

@@ -20,3 +20,4 @@ function checkHealth(req, res) {
 module.exports = {
   checkHealth,
 };
+

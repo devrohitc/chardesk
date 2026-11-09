@@ -5,3 +5,4 @@ export function Tag({ children, variant = '' }) {
 }
 
 export default Tag;
+

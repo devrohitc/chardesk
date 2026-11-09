@@ -5,3 +5,4 @@ const healthController = require('../controllers/healthController');
 router.get('/', healthController.checkHealth);
 
 module.exports = router;
+

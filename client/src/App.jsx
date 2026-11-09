@@ -246,3 +246,4 @@ function AuthenticatedApp({ currentUser, onLogout }) {
     </AppLayout>
   );
 }
+

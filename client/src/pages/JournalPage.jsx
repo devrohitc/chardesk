@@ -107,3 +107,4 @@ export function JournalPage({ selectedDate, setSelectedDate, log, updateLog }) {
 }
 
 export default JournalPage;
+

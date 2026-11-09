@@ -21,3 +21,4 @@ router.put('/bills/:id/toggle', financeController.toggleBillPayment);
 router.delete('/bills/:id', financeController.deleteBill);
 
 module.exports = router;
+

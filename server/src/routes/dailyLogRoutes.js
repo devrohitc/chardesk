@@ -12,3 +12,4 @@ router.get('/:date', dailyLogController.getLog);
 router.put('/:date', updateDailyLogValidator, validate, dailyLogController.updateLog);
 
 module.exports = router;
+

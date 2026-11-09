@@ -436,3 +436,4 @@ export function AuthPage({ onAuthenticated }) {
 }
 
 export default AuthPage;
+

@@ -2,6 +2,9 @@ const mongoose = require('mongoose');
 const config = require('./environment');
 const logger = require('../utils/logger');
 
+// Set buffer timeout so queries fail fast if DB is disconnected
+mongoose.set('bufferTimeoutMS', 2500);
+
 let isConnected = false;
 
 async function connectDB() {
@@ -54,3 +57,4 @@ module.exports = {
   connectDB,
   getDatabaseStatus,
 };
+

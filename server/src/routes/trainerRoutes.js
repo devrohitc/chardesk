@@ -11,3 +11,4 @@ router.put('/partner', trainerController.setPartner);
 router.post('/focus', trainerController.recordFocus);
 
 module.exports = router;
+

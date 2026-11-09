@@ -22,3 +22,4 @@ export function shiftDate(value, amount) {
 export function slugTitle(value = '') {
   return value.replace(/-/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
+

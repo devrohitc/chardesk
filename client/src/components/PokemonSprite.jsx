@@ -41,3 +41,4 @@ export function PokemonSprite({ pokemon, className = '', artwork = false, onClic
 }
 
 export default PokemonSprite;
+

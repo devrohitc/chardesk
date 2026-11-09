@@ -13,3 +13,4 @@ router.put('/:id/toggle', questController.toggleQuest);
 router.delete('/:id', questController.deleteQuest);
 
 module.exports = router;
+

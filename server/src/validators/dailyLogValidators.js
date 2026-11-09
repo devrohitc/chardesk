@@ -17,3 +17,4 @@ const updateDailyLogValidator = [
 module.exports = {
   updateDailyLogValidator,
 };
+
