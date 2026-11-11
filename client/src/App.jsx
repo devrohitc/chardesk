@@ -36,7 +36,12 @@ export default function App() {
   };
 
   if (!currentUser) {
-    return <AuthPage onAuthenticated={handleAuthenticated} />;
+    return (
+      <>
+        <PokeBallCursor />
+        <AuthPage onAuthenticated={handleAuthenticated} />
+      </>
+    );
   }
 
   return <AuthenticatedApp currentUser={currentUser} onLogout={handleLogout} />;
